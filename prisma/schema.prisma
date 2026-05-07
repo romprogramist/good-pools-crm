@@ -1,0 +1,11 @@
+// Prisma schema — модели добавляются по этапам.
+// См. spec.md раздел 5 (модель данных) и plan.md.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}

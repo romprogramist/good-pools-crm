@@ -12,16 +12,16 @@
 
 ## Этап 1. Setup проекта
 
-- [ ] Инициализировать Next.js 16 + TypeScript + App Router (`npx create-next-app@latest .`)
-- [ ] Установить Tailwind CSS + настроить `tailwind.config.ts`
-- [ ] Установить shadcn/ui, инициализировать (`npx shadcn@latest init`)
-- [ ] Установить Prisma, инициализировать (`npx prisma init`)
-- [ ] Создать БД `good_pools_crm` в локальном Postgres
-- [ ] Настроить `.env` (DATABASE_URL, NEXTAUTH_SECRET, VAPID-ключи)
-- [ ] Базовая структура папок: `src/app/`, `src/lib/`, `src/components/`, `prisma/`
-- [ ] Layout заготовка с шапкой «ХОРОШИЕ БАССЕЙНЫ»
-- [ ] Заглушка страницы `/login` (без логики, только форма)
-- [ ] Скрипт `npm run dev` поднимает приложение на http://localhost:3000
+- [x] Инициализировать Next.js 16 + TypeScript + App Router (Next 16.2.6, React 19.2.4, Turbopack)
+- [x] Установить Tailwind CSS (v4 через @tailwindcss/postcss)
+- [~] Установить shadcn/ui — **отложено в этап 2** (новая версия требует интерактивный выбор пресета, поставим вместе с первой реальной формой)
+- [x] Установить Prisma, инициализировать (Prisma 7.8 + dotenv, конфиг в `prisma.config.ts`)
+- [x] Создать БД `good_pools_crm_db` в локальном Postgres
+- [x] Настроить `.env` (DATABASE_URL, NEXTAUTH_SECRET, VAPID-плейсхолдеры, SMTP, Я.Карты)
+- [x] Базовая структура папок: `src/app/`, `src/lib/`, `src/components/`, `prisma/`
+- [x] Layout заготовка с шапкой «ХОРОШИЕ БАССЕЙНЫ» (`src/components/Header.tsx`)
+- [x] Заглушка страницы `/login` (форма email + пароль, кнопка disabled до этапа 2)
+- [x] `npm run dev` поднимает приложение на http://localhost:3000 (проверено `curl`: / → 200, /login → 200)
 
 **Чекпойнт:** Юзер открывает http://localhost:3000 → видит шапку с логотипом и кнопку «Войти». Кнопка ведёт на `/login` с формой.
 
@@ -29,6 +29,7 @@
 
 ## Этап 2. Auth + роли
 
+- [ ] **Установить shadcn/ui** (перенесено из этапа 1) — `npx shadcn@latest init`, выбрать preset «Nova» интерактивно
 - [ ] Prisma-схема: `User` (id, email, password_hash, role, name, phone, created_at)
 - [ ] Миграция применена
 - [ ] Установить `next-auth` + `bcrypt`
@@ -264,4 +265,4 @@
 3. Скажи Claude: «Продолжаем CRM с этапа N».
 4. Claude прочитает `spec.md` + `plan.md` и поймёт контекст.
 
-**Текущий статус:** этапы 1-17 — pending, ничего не начато.
+**Текущий статус:** этап 1 готов (ждёт чекпойнта юзера). Этапы 2-17 — pending.
