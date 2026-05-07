@@ -1,6 +1,20 @@
+import { redirect } from "next/navigation";
 import { Header } from "@/components/Header";
+import { isSetupComplete } from "@/lib/setup";
+import { auth } from "@/lib/auth";
 
-export default function Home() {
+export default async function Home() {
+  if (!(await isSetupComplete())) {
+    redirect("/setup");
+  }
+
+  const session = await auth();
+  if (session?.user) {
+    if (session.user.role === "admin") redirect("/admin");
+    if (session.user.role === "service") redirect("/service");
+    redirect("/client");
+  }
+
   return (
     <>
       <Header />

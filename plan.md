@@ -29,24 +29,28 @@
 
 ## Этап 2. Auth + роли
 
-- [ ] **Установить shadcn/ui** (перенесено из этапа 1) — `npx shadcn@latest init`, выбрать preset «Nova» интерактивно
-- [ ] Prisma-схема: `User` (id, email, password_hash, role, name, phone, created_at)
-- [ ] Миграция применена
-- [ ] Установить `next-auth` + `bcrypt`
-- [ ] Credentials provider с проверкой email/пароля и bcrypt
-- [ ] Сессии хранятся в БД (`Session`, `Account` таблицы)
-- [ ] Middleware проверяет авторизацию и редиректит неавторизованных на `/login`
-- [ ] Логика ролей: `admin | service | client` с роут-разделением (`/admin/*`, `/service/*`, `/client/*`)
-- [ ] Скрипт `scripts/create-admin.ts` — создаёт первого админа из консоли
-- [ ] Заглушки главных страниц для каждой роли (просто «Привет, админ» / «Привет, сервисник» / «Привет, клиент»)
+- [x] **shadcn/ui** установлен (preset Nova) + компоненты button/input/label/card
+- [x] Prisma-схема: `User` (cuid, email, name, phone, passwordHash, role, active, timestamps) + `Account`/`Session`/`VerificationToken` для Auth.js
+- [x] Миграция `20260507231222_init_auth` применена
+- [x] Prisma переведён на стабильный `prisma-client-js` + адаптер `@prisma/adapter-pg`
+- [x] `next-auth@beta` (v5) + Credentials provider + JWT-сессия + bcryptjs
+- [x] `src/lib/auth.ts` — конфиг, callbacks для роли в JWT/session, type-extension в `src/types/next-auth.d.ts`
+- [x] `src/proxy.ts` (бывший middleware — Next 16 переименовал) — защита всех приватных роутов, ролевая маршрутизация
+- [x] **First-run wizard** `/setup`: server action создаёт первого админа; страница 404 после первого создания
+- [x] Главная `/` редиректит на `/setup` если 0 админов; на role-главную если есть сессия
+- [x] `/login` с server action `loginAction` через `signIn("credentials")`, обработка ошибок
+- [x] Заглушки `/admin`, `/service`, `/client` с приветствием по имени и кнопкой выхода
+- [x] Type-check `tsc --noEmit` без ошибок
+- [x] Roundtrip-тест через curl: `/` → 307→/setup, `/setup` → 200, после создания админа `/setup` → 404, `/admin` без сессии → 307→/login
 
-**Чекпойнт:** Юзер запускает `npx tsx scripts/create-admin.ts admin@example.com pass123 "Иван Админ"` → логинится через `/login` → попадает на `/admin` и видит «Привет, Иван Админ (admin)».
+**Чекпойнт:** Юзер открывает http://localhost:3000 → редирект на `/setup` → заполняет форму (email + пароль + ФИО) → редирект на `/login` → логинится → попадает на `/admin` и видит «Привет, Иван Админ (admin)». При повторном переходе на `/setup` — 404.
 
 ---
 
 ## Этап 3. Управление пользователями
 
 - [ ] Раздел `/admin/users` — таблица всех пользователей (фильтр по роли)
+- [ ] Кнопка «Добавить администратора» — форма (имя, email, телефон) → создаётся `User` с ролью `admin`, email-приглашение
 - [ ] Кнопка «Добавить сервисника» — форма (имя, email, телефон) → создаётся `User` с ролью `service`, отправляется email-приглашение
 - [ ] Кнопка «Добавить клиента» — форма (ФИО, email, телефон, юр.инфо?) → создаётся `User` (role=client) + `Customer`, отправляется email-приглашение
 - [ ] Email-инвайт содержит одноразовую ссылку на установку пароля (`/setup-password?token=...`)
@@ -265,4 +269,4 @@
 3. Скажи Claude: «Продолжаем CRM с этапа N».
 4. Claude прочитает `spec.md` + `plan.md` и поймёт контекст.
 
-**Текущий статус:** этап 1 готов (ждёт чекпойнта юзера). Этапы 2-17 — pending.
+**Текущий статус:** этап 2 готов (ждёт чекпойнта юзера). Этапы 3-17 — pending.

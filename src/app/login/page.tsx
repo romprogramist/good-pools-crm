@@ -1,6 +1,27 @@
 import { Header } from "@/components/Header";
+import { auth } from "@/lib/auth";
+import { redirect } from "next/navigation";
+import { loginAction } from "./actions";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
-export default function LoginPage() {
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string; setup?: string }>;
+}) {
+  const session = await auth();
+  if (session?.user) {
+    if (session.user.role === "admin") redirect("/admin");
+    if (session.user.role === "service") redirect("/service");
+    redirect("/client");
+  }
+
+  const params = await searchParams;
+  const showSetupSuccess = params.setup === "ok";
+  const error = params.error;
+
   return (
     <>
       <Header />
@@ -11,48 +32,46 @@ export default function LoginPage() {
             Доступ выдаёт администратор компании
           </p>
 
-          <form className="mt-6 space-y-4">
+          {showSetupSuccess && (
+            <div className="mt-4 rounded-lg bg-green-50 p-3 text-sm text-green-800 ring-1 ring-green-200">
+              Администратор создан. Войдите с указанными данными.
+            </div>
+          )}
+
+          {error && (
+            <div className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-800 ring-1 ring-red-200">
+              Неверный email или пароль
+            </div>
+          )}
+
+          <form action={loginAction} className="mt-6 space-y-4">
             <div>
-              <label className="block text-sm font-medium text-zinc-700">
-                Email
-              </label>
-              <input
-                type="email"
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
                 name="email"
+                type="email"
                 required
                 autoComplete="email"
-                className="mt-1 block w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm shadow-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
-                placeholder="you@example.com"
+                className="mt-1"
               />
             </div>
-
             <div>
-              <label className="block text-sm font-medium text-zinc-700">
-                Пароль
-              </label>
-              <input
-                type="password"
+              <Label htmlFor="password">Пароль</Label>
+              <Input
+                id="password"
                 name="password"
+                type="password"
                 required
                 autoComplete="current-password"
-                className="mt-1 block w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm shadow-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
-                placeholder="••••••••"
+                className="mt-1"
               />
             </div>
 
-            <button
-              type="submit"
-              disabled
-              className="w-full rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white opacity-50"
-              title="Логика появится на этапе 2"
-            >
+            <Button type="submit" className="w-full">
               Войти
-            </button>
+            </Button>
           </form>
-
-          <p className="mt-4 text-center text-xs text-zinc-400">
-            Логика входа подключается на этапе 2
-          </p>
         </div>
       </main>
     </>
