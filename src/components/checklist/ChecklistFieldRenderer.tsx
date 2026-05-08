@@ -20,16 +20,26 @@ export function ChecklistFieldRenderer({
   disabled?: boolean;
 }) {
   const opts = Array.isArray(question.options) ? (question.options as string[]) : [];
+  const isSingleInput = question.type === "text" || question.type === "number";
+  const fieldId = `field-${question.id}`;
 
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="text-sm font-medium text-zinc-700">
-        {question.label}
-        {question.required && <span className="ml-1 text-red-600">*</span>}
-      </label>
+      {isSingleInput ? (
+        <label htmlFor={fieldId} className="text-sm font-medium text-zinc-700">
+          {question.label}
+          {question.required && <span className="ml-1 text-red-600">*</span>}
+        </label>
+      ) : (
+        <div className="text-sm font-medium text-zinc-700">
+          {question.label}
+          {question.required && <span className="ml-1 text-red-600">*</span>}
+        </div>
+      )}
 
       {question.type === "text" && (
         <Input
+          id={fieldId}
           type="text"
           value={typeof value === "string" ? value : ""}
           onChange={(e) => onChange?.(e.target.value)}
@@ -42,6 +52,7 @@ export function ChecklistFieldRenderer({
       {question.type === "number" && (
         <div className="flex items-center gap-2">
           <Input
+            id={fieldId}
             type="text"
             inputMode="decimal"
             value={typeof value === "string" ? value : ""}
