@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { loginAction } from "./actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { PageContainer, Card, FormField, Alert } from "@/components/Page";
 
 export default async function LoginPage({
   searchParams,
@@ -25,55 +25,62 @@ export default async function LoginPage({
   return (
     <>
       <Header />
-      <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center px-4 py-12">
-        <div className="rounded-2xl bg-white p-8 shadow-sm ring-1 ring-zinc-200">
-          <h1 className="text-2xl font-bold text-zinc-900">Вход в CRM</h1>
-          <p className="mt-1 text-sm text-zinc-500">
-            Доступ выдаёт администратор компании
-          </p>
+      <PageContainer size="narrow" className="flex flex-col justify-center">
+        <Card>
+          <div className="space-y-1">
+            <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">
+              Вход в CRM
+            </h1>
+            <p className="text-sm text-zinc-500">
+              Доступ выдаёт администратор компании
+            </p>
+          </div>
 
           {showSetupSuccess && (
-            <div className="mt-4 rounded-lg bg-green-50 p-3 text-sm text-green-800 ring-1 ring-green-200">
-              Администратор создан. Войдите с указанными данными.
+            <div className="mt-5">
+              <Alert variant="success">
+                Администратор создан. Войдите с указанными данными.
+              </Alert>
             </div>
           )}
 
           {error && (
-            <div className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-800 ring-1 ring-red-200">
-              Неверный email или пароль
+            <div className="mt-5">
+              <Alert variant="error">Неверный email или пароль</Alert>
             </div>
           )}
 
           <form action={loginAction} className="mt-6 space-y-4">
-            <div>
-              <Label htmlFor="email">Email</Label>
+            <FormField label="Email" htmlFor="email">
               <Input
                 id="email"
                 name="email"
                 type="email"
                 required
                 autoComplete="email"
-                className="mt-1"
+                className="h-11 text-base"
               />
-            </div>
-            <div>
-              <Label htmlFor="password">Пароль</Label>
+            </FormField>
+            <FormField label="Пароль" htmlFor="password">
               <Input
                 id="password"
                 name="password"
                 type="password"
                 required
                 autoComplete="current-password"
-                className="mt-1"
+                className="h-11 text-base"
               />
-            </div>
+            </FormField>
 
-            <Button type="submit" className="w-full">
+            <Button
+              type="submit"
+              className="h-11 w-full bg-teal-600 px-5 text-sm font-semibold text-white shadow-sm hover:bg-teal-700"
+            >
               Войти
             </Button>
           </form>
-        </div>
-      </main>
+        </Card>
+      </PageContainer>
     </>
   );
 }

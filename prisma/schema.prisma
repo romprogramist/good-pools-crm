@@ -28,8 +28,52 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  accounts Account[]
-  sessions Session[]
+  accounts      Account[]
+  sessions      Session[]
+  customer      Customer?
+  inviteTokens  InviteToken[]
+  activityLog   ActivityLog[] @relation("ActivityActor")
+}
+
+model Customer {
+  id                     String   @id @default(cuid())
+  userId                 String   @unique
+  fullName               String
+  phone                  String?
+  email                  String?
+  legalInfo              String?
+  individualServicePrice Decimal?
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model InviteToken {
+  token     String   @id
+  userId    String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model ActivityLog {
+  id         String   @id @default(cuid())
+  actorId    String?
+  action     String
+  entityType String?
+  entityId   String?
+  diff       Json?
+  createdAt  DateTime @default(now())
+
+  actor User? @relation("ActivityActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([actorId])
 }
 
 model Account {

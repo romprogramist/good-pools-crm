@@ -4,7 +4,7 @@ import { isSetupComplete } from "@/lib/setup";
 import { setupAction } from "./actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { PageContainer, Card, FormField } from "@/components/Page";
 
 export default async function SetupPage() {
   if (await isSetupComplete()) notFound();
@@ -12,27 +12,29 @@ export default async function SetupPage() {
   return (
     <>
       <Header />
-      <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center px-4 py-12">
-        <div className="rounded-2xl bg-white p-8 shadow-sm ring-1 ring-zinc-200">
-          <h1 className="text-2xl font-bold text-zinc-900">Первый запуск</h1>
-          <p className="mt-1 text-sm text-zinc-500">
-            Создайте учётную запись администратора компании. Эта страница доступна
-            только один раз.
-          </p>
+      <PageContainer size="narrow" className="flex flex-col justify-center">
+        <Card>
+          <div className="space-y-1">
+            <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">
+              Первый запуск
+            </h1>
+            <p className="text-sm text-zinc-500">
+              Создайте учётную запись администратора компании. Эта страница доступна
+              только один раз.
+            </p>
+          </div>
 
           <form action={setupAction} className="mt-6 space-y-4">
-            <div>
-              <Label htmlFor="name">ФИО администратора</Label>
+            <FormField label="ФИО администратора" htmlFor="name">
               <Input
                 id="name"
                 name="name"
                 required
                 placeholder="Иван Иванов"
-                className="mt-1"
+                className="h-11 text-base"
               />
-            </div>
-            <div>
-              <Label htmlFor="email">Email</Label>
+            </FormField>
+            <FormField label="Email" htmlFor="email">
               <Input
                 id="email"
                 name="email"
@@ -40,11 +42,10 @@ export default async function SetupPage() {
                 required
                 autoComplete="email"
                 placeholder="admin@example.com"
-                className="mt-1"
+                className="h-11 text-base"
               />
-            </div>
-            <div>
-              <Label htmlFor="password">Пароль (минимум 8 символов)</Label>
+            </FormField>
+            <FormField label="Пароль" htmlFor="password" hint="Минимум 8 символов">
               <Input
                 id="password"
                 name="password"
@@ -52,16 +53,19 @@ export default async function SetupPage() {
                 required
                 minLength={8}
                 autoComplete="new-password"
-                className="mt-1"
+                className="h-11 text-base"
               />
-            </div>
+            </FormField>
 
-            <Button type="submit" className="w-full">
+            <Button
+              type="submit"
+              className="h-11 w-full bg-teal-600 px-5 text-sm font-semibold text-white shadow-sm hover:bg-teal-700"
+            >
               Создать администратора
             </Button>
           </form>
-        </div>
-      </main>
+        </Card>
+      </PageContainer>
     </>
   );
 }

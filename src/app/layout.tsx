@@ -17,7 +17,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ru" className={cn("h-full antialiased", "font-sans", geist.variable)}>
-      <body className="min-h-full flex flex-col bg-zinc-50 text-zinc-900">
+      <body className="min-h-full flex flex-col bg-gradient-to-b from-teal-50/40 via-zinc-50 to-zinc-50 text-zinc-900">
         {children}
       </body>
     </html>

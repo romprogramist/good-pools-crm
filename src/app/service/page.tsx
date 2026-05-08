@@ -1,7 +1,6 @@
 import { auth } from "@/lib/auth";
 import { Header } from "@/components/Header";
-import { Button } from "@/components/ui/button";
-import { logoutAction } from "@/app/actions/auth";
+import { PageContainer, PageHeader, Card } from "@/components/Page";
 
 export default async function ServiceHome() {
   const session = await auth();
@@ -9,16 +8,17 @@ export default async function ServiceHome() {
   return (
     <>
       <Header />
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-12">
-        <h1 className="text-2xl font-bold">
-          Привет, {session?.user.name} ({session?.user.role})
-        </h1>
-        <p className="mt-2 text-zinc-600">Кабинет сервисника — заглушка.</p>
-
-        <form action={logoutAction} className="mt-6">
-          <Button type="submit" variant="outline">Выйти</Button>
-        </form>
-      </main>
+      <PageContainer>
+        <PageHeader
+          title={`Привет, ${session?.user.name ?? ""}`}
+          subtitle="Кабинет сервисника"
+        />
+        <Card className="mt-8">
+          <p className="text-sm text-zinc-500">
+            Разделы появятся в следующих этапах: клиенты, бассейны, календарь, визиты.
+          </p>
+        </Card>
+      </PageContainer>
     </>
   );
 }
