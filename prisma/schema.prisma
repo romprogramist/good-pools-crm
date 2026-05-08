@@ -29,6 +29,25 @@ enum ChecklistQuestionType {
   bool
 }
 
+enum VisitStatus {
+  planned
+  in_progress
+  completed
+  canceled
+}
+
+enum VisitKind {
+  manual
+  online_request
+  series
+}
+
+enum OnlineRequestStatus {
+  pending
+  accepted
+  declined
+}
+
 model User {
   id            String    @id @default(cuid())
   email         String    @unique
@@ -47,6 +66,10 @@ model User {
   customer      Customer?
   inviteTokens  InviteToken[]
   activityLog   ActivityLog[] @relation("ActivityActor")
+
+  visitsAsServicer       Visit[]         @relation("VisitServicer")
+  visitSeriesAsServicer  VisitSeries[]   @relation("VisitSeriesServicer")
+  acceptedRequests       OnlineRequest[] @relation("OnlineRequestAcceptedBy")
 }
 
 model Customer {
@@ -61,6 +84,8 @@ model Customer {
 
   user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   pools Pool[]
+
+  onlineRequests OnlineRequest[]
 }
 
 model Pool {
@@ -80,6 +105,10 @@ model Pool {
   photos       PoolPhoto[]
   instructions PoolInstruction[]
   equipment    Equipment[]
+
+  visits         Visit[]
+  visitSeries    VisitSeries[]
+  onlineRequests OnlineRequest[]
 
   @@index([customerId])
 }
@@ -224,4 +253,71 @@ model ChecklistQuestion {
 
   @@index([order])
   @@index([active])
+}
+
+model VisitSeries {
+  id              String   @id @default(cuid())
+  poolId          String
+  serviceUserId   String
+  startAt         DateTime
+  durationMinutes Int      @default(60)
+  recurrence      String
+  occurrences     Int
+  notes           String?
+  createdAt       DateTime @default(now())
+
+  pool        Pool   @relation(fields: [poolId], references: [id], onDelete: Cascade)
+  serviceUser User   @relation("VisitSeriesServicer", fields: [serviceUserId], references: [id])
+  visits      Visit[]
+
+  @@index([poolId])
+  @@index([serviceUserId])
+}
+
+model Visit {
+  id              String      @id @default(cuid())
+  poolId          String
+  serviceUserId   String
+  scheduledAt     DateTime
+  durationMinutes Int         @default(60)
+  status          VisitStatus @default(planned)
+  kind            VisitKind   @default(manual)
+  seriesId        String?
+  notes           String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  pool          Pool           @relation(fields: [poolId], references: [id], onDelete: Cascade)
+  serviceUser   User           @relation("VisitServicer", fields: [serviceUserId], references: [id])
+  series        VisitSeries?   @relation(fields: [seriesId], references: [id], onDelete: SetNull)
+  onlineRequest OnlineRequest?
+
+  @@index([poolId])
+  @@index([serviceUserId])
+  @@index([scheduledAt])
+  @@index([seriesId])
+}
+
+model OnlineRequest {
+  id            String              @id @default(cuid())
+  customerId    String
+  poolId        String
+  desiredFrom   DateTime
+  desiredTo     DateTime
+  message       String?
+  status        OnlineRequestStatus @default(pending)
+  acceptedById  String?
+  visitId       String?             @unique
+  declineReason String?
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  pool       Pool     @relation(fields: [poolId], references: [id], onDelete: Cascade)
+  acceptedBy User?    @relation("OnlineRequestAcceptedBy", fields: [acceptedById], references: [id])
+  visit      Visit?   @relation(fields: [visitId], references: [id], onDelete: SetNull)
+
+  @@index([customerId])
+  @@index([poolId])
+  @@index([status])
 }
