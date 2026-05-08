@@ -64,6 +64,8 @@ export default async function AdminChecklistPage({
     ? await prisma.checklistQuestion.findUnique({ where: { id: params.edit } })
     : null;
 
+  const editNotFound = !!params.edit && !editing;
+
   const showNewPicker = params.new === "1";
 
   const allActive = await prisma.checklistQuestion.findMany({
@@ -95,6 +97,7 @@ export default async function AdminChecklistPage({
         <div className="mt-6 space-y-4">
           {params.ok && <Alert variant="success">{decodeURIComponent(params.ok)}</Alert>}
           {params.error && <Alert variant="error">{decodeURIComponent(params.error)}</Alert>}
+          {editNotFound && <Alert variant="error">Вопрос не найден</Alert>}
         </div>
 
         <div className="mt-6 flex flex-wrap items-center gap-2">
@@ -123,7 +126,11 @@ export default async function AdminChecklistPage({
           ))}
         </div>
 
-        {showNewPicker && (
+        {editing ? (
+          <ChecklistQuestionForm mode={{ kind: "edit", question: editing }} />
+        ) : newType ? (
+          <ChecklistQuestionForm mode={{ kind: "create", type: newType }} />
+        ) : showNewPicker ? (
           <Card className="mt-6">
             <h2 className="text-lg font-semibold text-zinc-900">Какой тип вопроса?</h2>
             <p className="mt-1 text-sm text-zinc-500">
@@ -142,10 +149,7 @@ export default async function AdminChecklistPage({
               ))}
             </div>
           </Card>
-        )}
-
-        {newType && <ChecklistQuestionForm mode={{ kind: "create", type: newType }} />}
-        {editing && <ChecklistQuestionForm mode={{ kind: "edit", question: editing }} />}
+        ) : null}
 
         <div className="mt-6">
           {tab === "active" && (
