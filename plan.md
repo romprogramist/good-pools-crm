@@ -103,13 +103,16 @@
 
 ## Этап 6. Чек-лист (динамическая схема)
 
-- [ ] Prisma: `ChecklistQuestion` (порядок, тип, label, опции, флаг active)
-- [ ] Импорт вопросов из существующей Google-формы (один раз вручную: посмотреть форму, создать сидер)
-- [ ] Раздел `/admin/checklist` — список вопросов, drag-drop сортировка, добавление/редактирование/деактивация
-- [ ] Поддерживаемые типы: текст, число, селект, чекбокс/да-нет
-- [ ] Превью «как видит сервисник» в админке
+- [x] Prisma: `ChecklistQuestion` + enum `ChecklistQuestionType` (text/number/single_select/multi_select/bool). Миграция `20260508151955_checklist_init`.
+- [x] Сидер `prisma/seeds/checklist.ts` — 25 вопросов из Google-формы (https://docs.google.com/forms/d/1yjJagwQEUAJULj6aQxYc7707MUDbIV_ev1alBJ-Is9s/viewform), идемпотентный. Скрипт `npm run db:seed:checklist`.
+- [x] Раздел `/admin/checklist` — 3 таба (Активные / Скрытые / Превью), drag-drop через `@dnd-kit/sortable`, форма create/edit через URL-параметры (`?new=<type>` / `?edit=<id>`).
+- [x] 5 типов вопросов: text, number (с unit), single_select, multi_select, bool. Дубликаты с моделью `Visit` (СОТРУДНИК / ДАТА / НАЗВАНИЕ ОБЪЕКТА / ОТПРАВКА ФОТООТЧЁТА) исключены.
+- [x] Превью «как видит сервисник» — переиспользуемый `ChecklistFieldRenderer` (для этапа 8).
+- [x] Soft-delete (флаг `active`), без жёсткого удаления, без версионирования вопросов.
+- [x] Activity log: `checklist.question.create/update/reorder/activate/deactivate`.
+- [x] Type-check, `next build` чистые. Lint — 1 pre-existing ошибка в `AddressAutocomplete.tsx` (этап 4), не блокирующая.
 
-**Чекпойнт:** Админ открывает `/admin/checklist` → видит вопросы из Google-формы → меняет порядок → добавляет новый вопрос «Уровень pH (число)» → видит в превью.
+**Чекпойнт:** Админ открывает `/admin/checklist` → видит 25 вопросов из формы → меняет порядок drag-drop'ом → добавляет новый вопрос «Уровень pH запас (число, мг/л)» → видит его в превью.
 
 ---
 
@@ -275,4 +278,4 @@
 3. Скажи Claude: «Продолжаем CRM с этапа N».
 4. Claude прочитает `spec.md` + `plan.md` и поймёт контекст.
 
-**Текущий статус:** этап 5 реализован и ждёт приёмки юзером (2026-05-08). Следующий — этап 6 (Чек-лист). Этапы 6-17 — pending.
+**Текущий статус:** этап 6 реализован и ждёт приёмки юзером (2026-05-08). Следующий — этап 7 (Календарь и онлайн-запись). Этапы 7-17 — pending.
