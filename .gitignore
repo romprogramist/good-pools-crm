@@ -45,3 +45,7 @@ next-env.d.ts
 # user-uploaded files (хранятся локально на сервере, не в git)
 /uploads
 /backups
+
+# Claude Code (локальные настройки)
+/.claude
+
