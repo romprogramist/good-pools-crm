@@ -59,6 +59,7 @@ export function ChecklistAdminList({ initial }: { initial: Q[] }) {
 
     const oldIndex = items.findIndex((i) => i.id === active.id);
     const newIndex = items.findIndex((i) => i.id === over.id);
+    const prev = items;
     const reordered = arrayMove(items, oldIndex, newIndex);
     setItems(reordered);
 
@@ -66,7 +67,7 @@ export function ChecklistAdminList({ initial }: { initial: Q[] }) {
       const res = await reorderQuestionsAction(reordered.map((i) => i.id));
       if (!res.ok) {
         setError(res.error ?? "Не удалось сохранить порядок");
-        setItems(items); // откат
+        setItems(prev); // откат
       } else {
         setError(null);
       }
