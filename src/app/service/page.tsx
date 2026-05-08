@@ -3,8 +3,10 @@ import { auth } from "@/lib/auth";
 import { Header } from "@/components/Header";
 import { PageContainer, PageHeader, Card } from "@/components/Page";
 import { UpcomingEquipmentWidget } from "@/components/service/UpcomingEquipmentWidget";
+import { UpcomingVisitsWidget } from "@/components/service/UpcomingVisitsWidget";
+import { prisma } from "@/lib/prisma";
 
-const SECTIONS = [
+const SECTIONS: { href: string; title: string; description: string; icon: React.ReactNode }[] = [
   {
     href: "/service/customers",
     title: "Клиенты и бассейны",
@@ -17,10 +19,32 @@ const SECTIONS = [
       </svg>
     ),
   },
+  {
+    href: "/service/calendar",
+    title: "Календарь",
+    description: "Все визиты сервисников в одном месте. Создание визита и серий.",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+        <rect x="3" y="4" width="18" height="18" rx="2" />
+        <path d="M16 2v4M8 2v4M3 10h18" />
+      </svg>
+    ),
+  },
+  {
+    href: "/service/online-requests",
+    title: "Онлайн-заявки",
+    description: "Заявки клиентов на сервис.",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+      </svg>
+    ),
+  },
 ];
 
 export default async function ServiceHome() {
   const session = await auth();
+  const pendingRequests = await prisma.onlineRequest.count({ where: { status: "pending" } });
 
   return (
     <>
@@ -39,8 +63,13 @@ export default async function ServiceHome() {
                   {s.icon}
                 </div>
                 <div className="mt-4">
-                  <div className="text-base font-semibold text-zinc-900">
-                    {s.title}
+                  <div className="flex items-center gap-2">
+                    <div className="text-base font-semibold text-zinc-900">{s.title}</div>
+                    {s.href === "/service/online-requests" && pendingRequests > 0 && (
+                      <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">
+                        {pendingRequests}
+                      </span>
+                    )}
                   </div>
                   <p className="mt-1 text-sm text-zinc-500">{s.description}</p>
                 </div>
@@ -53,12 +82,7 @@ export default async function ServiceHome() {
         </div>
 
         <UpcomingEquipmentWidget scope="service" />
-
-        <Card className="mt-6">
-          <p className="text-sm text-zinc-500">
-            Календарь, визиты и заявки появятся в следующих этапах.
-          </p>
-        </Card>
+        <UpcomingVisitsWidget />
       </PageContainer>
     </>
   );
