@@ -3,7 +3,8 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { Prisma, ChecklistQuestionType } from "@prisma/client";
+import { Prisma } from "@prisma/client";
+import type { ChecklistQuestionType } from "@prisma/client";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { logActivity } from "@/lib/activity";
@@ -21,7 +22,13 @@ function back(params: Record<string, string>): never {
   redirect(`/admin/checklist${search ? "?" + search : ""}`);
 }
 
-const TypeEnum = z.nativeEnum(ChecklistQuestionType);
+const TypeEnum = z.enum([
+  "text",
+  "number",
+  "single_select",
+  "multi_select",
+  "bool",
+]) satisfies z.ZodType<ChecklistQuestionType>;
 
 const QuestionSchema = z
   .object({
