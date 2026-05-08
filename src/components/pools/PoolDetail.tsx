@@ -5,6 +5,7 @@ import { PageHeader, Card, Alert } from "@/components/Page";
 import { PoolForm } from "@/components/pools/PoolForm";
 import { PoolPhotos } from "@/components/pools/PoolPhotos";
 import { PoolInstructions } from "@/components/pools/PoolInstructions";
+import { PoolEquipment } from "@/components/pools/PoolEquipment";
 import { getMapsApiKey } from "@/lib/maps";
 
 type Scope = "admin" | "service";
@@ -28,9 +29,21 @@ export async function PoolDetail({
       customer: { select: { id: true, fullName: true } },
       photos: { orderBy: { uploadedAt: "asc" } },
       instructions: { orderBy: { createdAt: "asc" } },
+      equipment: { orderBy: { createdAt: "asc" } },
     },
   });
   if (!pool || pool.customerId !== customerId) notFound();
+
+  const equipmentTemplates = await prisma.equipmentTemplate.findMany({
+    where: { active: true },
+    orderBy: { typeName: "asc" },
+    select: {
+      id: true,
+      typeName: true,
+      defaultWarrantyMonths: true,
+      regulationPeriodDays: true,
+    },
+  });
 
   const mapsKey = getMapsApiKey();
   const customerHref = `/${scope}/customers/${customerId}`;
@@ -124,6 +137,25 @@ export async function PoolDetail({
           photos={pool.photos.map((p) => ({
             id: p.id,
             filename: p.path.split("/").pop() ?? "",
+          }))}
+        />
+
+        <PoolEquipment
+          scope={scope}
+          customerId={customerId}
+          poolId={pool.id}
+          templates={equipmentTemplates}
+          equipment={pool.equipment.map((e) => ({
+            id: e.id,
+            typeName: e.typeName,
+            serial: e.serial,
+            installDate: e.installDate.toISOString(),
+            warrantyMonths: e.warrantyMonths,
+            regulationPeriodDays: e.regulationPeriodDays,
+            lastReplacementDate: e.lastReplacementDate
+              ? e.lastReplacementDate.toISOString()
+              : null,
+            notes: e.notes,
           }))}
         />
 

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { Header } from "@/components/Header";
 import { PageContainer, PageHeader, Card } from "@/components/Page";
+import { UpcomingEquipmentWidget } from "@/components/service/UpcomingEquipmentWidget";
 
 const SECTIONS = [
   {
@@ -50,6 +51,8 @@ export default async function ServiceHome() {
             </Link>
           ))}
         </div>
+
+        <UpcomingEquipmentWidget scope="service" />
 
         <Card className="mt-6">
           <p className="text-sm text-zinc-500">

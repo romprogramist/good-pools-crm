@@ -71,6 +71,7 @@ model Pool {
   customer     Customer          @relation(fields: [customerId], references: [id], onDelete: Cascade)
   photos       PoolPhoto[]
   instructions PoolInstruction[]
+  equipment    Equipment[]
 
   @@index([customerId])
 }
@@ -101,6 +102,40 @@ model PoolInstruction {
   pool Pool @relation(fields: [poolId], references: [id], onDelete: Cascade)
 
   @@index([poolId])
+}
+
+model EquipmentTemplate {
+  id                     String   @id @default(cuid())
+  typeName               String
+  defaultWarrantyMonths  Int
+  regulationPeriodDays   Int
+  notes                  String?
+  active                 Boolean  @default(true)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  equipment Equipment[]
+}
+
+model Equipment {
+  id                   String    @id @default(cuid())
+  poolId               String
+  templateId           String?
+  typeName             String
+  serial               String?
+  installDate          DateTime
+  warrantyMonths       Int
+  regulationPeriodDays Int
+  lastReplacementDate  DateTime?
+  notes                String?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  pool     Pool               @relation(fields: [poolId], references: [id], onDelete: Cascade)
+  template EquipmentTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+
+  @@index([poolId])
+  @@index([templateId])
 }
 
 model InviteToken {
