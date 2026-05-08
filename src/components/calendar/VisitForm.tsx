@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Card, FormField } from "@/components/Page";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -57,6 +57,7 @@ export function VisitForm({ mode, customers, serviceUsers, defaults }: Props) {
   const [conflicts, setConflicts] = useState<Conflict[] | null>(null);
   const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
+  const skipCheckRef = useRef(false);
 
   const showCustomerSelect = mode.kind !== "accept";
   const allowSeries = mode.kind === "create";
@@ -96,11 +97,17 @@ export function VisitForm({ mode, customers, serviceUsers, defaults }: Props) {
     <Card>
       <form
         onSubmit={async (e) => {
+          if (skipCheckRef.current) {
+            skipCheckRef.current = false;
+            return; // даём форме уйти на server action
+          }
           if (confirming) return; // следующий submit пройдёт уже без чека
           e.preventDefault();
+          const form = e.currentTarget;
           const ok = await runConflictCheck();
           if (ok) {
-            (e.currentTarget as HTMLFormElement).submit();
+            skipCheckRef.current = true;
+            form.requestSubmit();
           }
         }}
         action={

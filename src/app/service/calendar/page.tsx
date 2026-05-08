@@ -1,15 +1,10 @@
-import dynamic from "next/dynamic";
 import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { Header } from "@/components/Header";
-import { PageContainer, PageHeader, Card, Alert } from "@/components/Page";
+import { PageContainer, PageHeader, Alert } from "@/components/Page";
 import { Button } from "@/components/ui/button";
 import { getVisitsInRange } from "@/lib/server-actions/visits";
-
-const CalendarView = dynamic(
-  () => import("@/components/calendar/CalendarView").then((m) => m.CalendarView),
-  { ssr: false, loading: () => <Card><p className="text-sm text-zinc-500">Загрузка календаря…</p></Card> },
-);
+import { CalendarViewLoader } from "@/components/calendar/CalendarViewLoader";
 
 type SP = Promise<{ ok?: string; error?: string; date?: string; view?: string; servicer?: string }>;
 
@@ -64,7 +59,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: SP 
         {sp.error && <div className="mt-4"><Alert variant="error">{decodeURIComponent(sp.error)}</Alert></div>}
 
         <div className="mt-6">
-          <CalendarView visits={calendarVisits} initialView={view} initialDate={sp.date} />
+          <CalendarViewLoader visits={calendarVisits} initialView={view} initialDate={sp.date} />
         </div>
       </PageContainer>
     </>
