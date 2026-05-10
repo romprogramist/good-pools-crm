@@ -26,6 +26,16 @@ export async function checkVisitCanComplete(visitId: string): Promise<Completion
     }),
   ]);
 
+  if (!visit) {
+    return {
+      ok: false,
+      missingRequired: [],
+      photoCount,
+      totalAmountSet: false,
+      errors: ["Визит не найден"],
+    };
+  }
+
   const answerMap = new Map(answers.map((a) => [a.questionId, a.value]));
   const missingRequired: { questionId: string; label: string }[] = [];
 

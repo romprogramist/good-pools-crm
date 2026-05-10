@@ -51,7 +51,7 @@ export function Combobox({
         <span className="truncate">{selected?.label ?? placeholder}</span>
         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
       </PopoverTrigger>
-      <PopoverContent className="w-full min-w-[200px] p-0">
+      <PopoverContent className="p-0 min-w-[200px]" style={{ width: "var(--anchor-width, 100%)" }}>
         <Command>
           <CommandInput placeholder="Поиск..." />
           <CommandList>
@@ -60,7 +60,7 @@ export function Combobox({
               {options.map((o) => (
                 <CommandItem
                   key={o.value}
-                  value={`${o.label} ${o.sub ?? ""}`}
+                  value={o.sub ? `${o.label} ${o.sub}` : o.label}
                   onSelect={() => {
                     onChange(o.value);
                     setOpen(false);
