@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "db:seed:checklist": "tsx prisma/seeds/checklist.ts"
+    "db:seed:checklist": "tsx prisma/seeds/checklist.ts",
+    "db:seed:chemistry": "tsx prisma/seeds/chemistry.ts"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.2",
