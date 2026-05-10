@@ -347,6 +347,7 @@ model VisitChecklistAnswer {
 
   @@unique([visitId, questionId])
   @@index([visitId])
+  @@index([questionId])
 }
 
 model VisitPhoto {
