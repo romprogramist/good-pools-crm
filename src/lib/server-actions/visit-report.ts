@@ -500,3 +500,138 @@ export async function deleteExtraWorkAction(input: { id: string }): Promise<{ ok
   revalidatePath(`/service/visits/${existing.visitId}`);
   return { ok: true };
 }
+
+// =========================
+// 7. Химия — список доступных позиций (для Combobox)
+// =========================
+export async function listActiveChemistryItems() {
+  await requireStaff();
+  return prisma.chemistryItem.findMany({
+    where: { active: true },
+    orderBy: { name: "asc" },
+    select: { id: true, name: true, unit: true, price: true },
+  });
+}
+
+// =========================
+// 8. Химия в визите (CRUD)
+// =========================
+const VisitChemistrySchema = z.object({
+  visitId: z.string().min(1),
+  chemistryItemId: z.string().min(1),
+  qty: z.number().min(0.001).max(10_000),
+});
+
+export async function addVisitChemistryAction(input: {
+  visitId: string;
+  chemistryItemId: string;
+  qty: number;
+}): Promise<{ ok: true; id: string } | { ok: false; error: string }> {
+  const actor = await requireStaff();
+  const parsed = VisitChemistrySchema.safeParse(input);
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0]?.message ?? "Неверные данные" };
+  }
+  try {
+    await ensureInProgress(input.visitId);
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Ошибка" };
+  }
+
+  const item = await prisma.chemistryItem.findUnique({
+    where: { id: input.chemistryItemId },
+  });
+  if (!item || !item.active) {
+    return { ok: false, error: "Позиция химии не найдена или неактивна" };
+  }
+
+  const last = await prisma.visitChemistry.findFirst({
+    where: { visitId: input.visitId },
+    orderBy: { order: "desc" },
+    select: { order: true },
+  });
+  const nextOrder = (last?.order ?? -1) + 1;
+
+  const created = await prisma.visitChemistry.create({
+    data: {
+      visitId: input.visitId,
+      chemistryItemId: item.id,
+      nameAtMoment: item.name,
+      unitAtMoment: item.unit,
+      priceAtMoment: item.price,
+      qty: parsed.data.qty,
+      order: nextOrder,
+    },
+  });
+
+  await logActivity({
+    actorId: actor.id,
+    action: "visit.chemistry.add",
+    entityType: "Visit",
+    entityId: input.visitId,
+    diff: {
+      id: created.id,
+      name: item.name,
+      qty: parsed.data.qty,
+      priceAtMoment: item.price.toString(),
+    },
+  });
+  revalidatePath(`/service/visits/${input.visitId}`);
+  return { ok: true, id: created.id };
+}
+
+export async function updateVisitChemistryQtyAction(input: {
+  id: string;
+  qty: number;
+}): Promise<{ ok: true } | { ok: false; error: string }> {
+  const actor = await requireStaff();
+  if (!input.id) return { ok: false, error: "Нет id" };
+  const existing = await prisma.visitChemistry.findUnique({
+    where: { id: input.id },
+  });
+  if (!existing) return { ok: false, error: "Запись не найдена" };
+  try {
+    await ensureInProgress(existing.visitId);
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Ошибка" };
+  }
+  if (input.qty <= 0 || input.qty > 10_000) {
+    return { ok: false, error: "Количество должно быть > 0 и ≤ 10000" };
+  }
+  await prisma.visitChemistry.update({
+    where: { id: input.id },
+    data: { qty: input.qty },
+  });
+  await logActivity({
+    actorId: actor.id,
+    action: "visit.chemistry.update",
+    entityType: "Visit",
+    entityId: existing.visitId,
+    diff: { id: input.id, before: existing.qty.toString(), after: input.qty },
+  });
+  revalidatePath(`/service/visits/${existing.visitId}`);
+  return { ok: true };
+}
+
+export async function deleteVisitChemistryAction(input: { id: string }): Promise<{ ok: true } | { ok: false; error: string }> {
+  const actor = await requireStaff();
+  const existing = await prisma.visitChemistry.findUnique({
+    where: { id: input.id },
+  });
+  if (!existing) return { ok: false, error: "Запись не найдена" };
+  try {
+    await ensureInProgress(existing.visitId);
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Ошибка" };
+  }
+  await prisma.visitChemistry.delete({ where: { id: input.id } });
+  await logActivity({
+    actorId: actor.id,
+    action: "visit.chemistry.delete",
+    entityType: "Visit",
+    entityId: existing.visitId,
+    diff: { id: input.id, name: existing.nameAtMoment, qty: existing.qty.toString() },
+  });
+  revalidatePath(`/service/visits/${existing.visitId}`);
+  return { ok: true };
+}
