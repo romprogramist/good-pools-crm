@@ -374,3 +374,129 @@ export async function deleteVisitPhotoAction(formData: FormData): Promise<void> 
   revalidatePath(`/service/visits/${visitId}`);
   redirect(`/service/visits/${visitId}?ok=${encodeURIComponent("Фото удалено")}`);
 }
+
+// =========================
+// 6. Доп.работы (CRUD)
+// =========================
+const ExtraWorkSchema = z.object({
+  visitId: z.string().min(1),
+  name: z.string().trim().min(1, "Название обязательно").max(200),
+  price: z.number().min(0).max(10_000_000),
+});
+
+async function ensureInProgress(visitId: string): Promise<void> {
+  const visit = await prisma.visit.findUnique({
+    where: { id: visitId },
+    select: { status: true },
+  });
+  if (!visit) throw new Error("Визит не найден");
+  if (visit.status !== "in_progress") {
+    throw new Error("Редактирование возможно только во время выполнения");
+  }
+}
+
+export async function addExtraWorkAction(input: {
+  visitId: string;
+  name: string;
+  price: number;
+}): Promise<{ ok: true; id: string } | { ok: false; error: string }> {
+  const actor = await requireStaff();
+  const parsed = ExtraWorkSchema.safeParse(input);
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0]?.message ?? "Неверные данные" };
+  }
+  try {
+    await ensureInProgress(input.visitId);
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Ошибка" };
+  }
+
+  const last = await prisma.visitExtraWork.findFirst({
+    where: { visitId: input.visitId },
+    orderBy: { order: "desc" },
+    select: { order: true },
+  });
+  const nextOrder = (last?.order ?? -1) + 1;
+
+  const created = await prisma.visitExtraWork.create({
+    data: {
+      visitId: input.visitId,
+      name: parsed.data.name,
+      price: parsed.data.price,
+      order: nextOrder,
+    },
+  });
+
+  await logActivity({
+    actorId: actor.id,
+    action: "visit.extra_work.create",
+    entityType: "Visit",
+    entityId: input.visitId,
+    diff: { id: created.id, name: created.name, price: created.price.toString() },
+  });
+
+  revalidatePath(`/service/visits/${input.visitId}`);
+  return { ok: true, id: created.id };
+}
+
+export async function updateExtraWorkAction(input: {
+  id: string;
+  name: string;
+  price: number;
+}): Promise<{ ok: true } | { ok: false; error: string }> {
+  const actor = await requireStaff();
+  if (!input.id) return { ok: false, error: "Нет id" };
+  const existing = await prisma.visitExtraWork.findUnique({ where: { id: input.id } });
+  if (!existing) return { ok: false, error: "Запись не найдена" };
+  try {
+    await ensureInProgress(existing.visitId);
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Ошибка" };
+  }
+  const parsed = ExtraWorkSchema.safeParse({
+    visitId: existing.visitId,
+    name: input.name,
+    price: input.price,
+  });
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0]?.message ?? "Неверные данные" };
+  }
+  await prisma.visitExtraWork.update({
+    where: { id: input.id },
+    data: { name: parsed.data.name, price: parsed.data.price },
+  });
+  await logActivity({
+    actorId: actor.id,
+    action: "visit.extra_work.update",
+    entityType: "Visit",
+    entityId: existing.visitId,
+    diff: {
+      id: input.id,
+      before: { name: existing.name, price: existing.price.toString() },
+      after: { name: parsed.data.name, price: parsed.data.price },
+    },
+  });
+  revalidatePath(`/service/visits/${existing.visitId}`);
+  return { ok: true };
+}
+
+export async function deleteExtraWorkAction(input: { id: string }): Promise<{ ok: true } | { ok: false; error: string }> {
+  const actor = await requireStaff();
+  const existing = await prisma.visitExtraWork.findUnique({ where: { id: input.id } });
+  if (!existing) return { ok: false, error: "Запись не найдена" };
+  try {
+    await ensureInProgress(existing.visitId);
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Ошибка" };
+  }
+  await prisma.visitExtraWork.delete({ where: { id: input.id } });
+  await logActivity({
+    actorId: actor.id,
+    action: "visit.extra_work.delete",
+    entityType: "Visit",
+    entityId: existing.visitId,
+    diff: { id: input.id, name: existing.name, price: existing.price.toString() },
+  });
+  revalidatePath(`/service/visits/${existing.visitId}`);
+  return { ok: true };
+}
