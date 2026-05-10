@@ -54,6 +54,19 @@ export async function GET(
     } else if (role !== "admin" && role !== "service") {
       return unauthorized();
     }
+  } else if (area === "visit-photos" || area === "reports-pdf") {
+    const visitId = rest[0];
+    if (!visitId) return new NextResponse("Bad request", { status: 400 });
+
+    if (role === "client") {
+      const visit = await prisma.visit.findUnique({
+        where: { id: visitId },
+        select: { pool: { select: { customer: { select: { userId: true } } } } },
+      });
+      if (!visit || visit.pool.customer.userId !== session.user.id) return unauthorized();
+    } else if (role !== "admin" && role !== "service") {
+      return unauthorized();
+    }
   } else {
     // Unknown area — staff only by default
     if (role !== "admin" && role !== "service") return unauthorized();

@@ -5,7 +5,9 @@ export type PushKind =
   | "new_online_request"
   | "request_accepted"
   | "request_declined"
-  | "visit_assigned";
+  | "visit_assigned"
+  | "visit_report_ready"
+  | "visit_report_updated";
 
 export type PushRecipient = { userId: string };
 
