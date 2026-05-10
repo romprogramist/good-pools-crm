@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { Header } from "@/components/Header";
 import { PageContainer, PageHeader, Card } from "@/components/Page";
 import { prisma } from "@/lib/prisma";
+import { formatMoscow } from "@/lib/calendar/dates";
 
 const SECTIONS: { href: string; title: string; description: string; icon: React.ReactNode }[] = [
   {
@@ -53,6 +54,15 @@ export default async function ClientHome() {
       })
     : 0;
 
+  const recentVisits = customer
+    ? await prisma.visit.findMany({
+        where: { pool: { customerId: customer.id }, status: "completed" },
+        orderBy: { completedAt: "desc" },
+        take: 3,
+        include: { pool: { select: { name: true } } },
+      })
+    : [];
+
   return (
     <>
       <Header />
@@ -87,6 +97,38 @@ export default async function ClientHome() {
             </Link>
           ))}
         </div>
+
+        {recentVisits.length > 0 && (
+          <section className="mt-10">
+            <Card>
+              <div className="mb-2 flex items-center justify-between">
+                <h2 className="text-lg font-semibold">Последние визиты</h2>
+                <Link href="/client/visits" className="text-sm text-blue-600 hover:underline">
+                  Все визиты →
+                </Link>
+              </div>
+              <ul className="flex flex-col gap-2 text-sm">
+                {recentVisits.map((v) => (
+                  <li key={v.id}>
+                    <Link
+                      href={`/client/visits/${v.id}`}
+                      className="flex justify-between rounded-md border border-zinc-200 px-3 py-2 hover:bg-zinc-50"
+                    >
+                      <span>
+                        {formatMoscow(v.scheduledAt)} · {v.pool.name}
+                      </span>
+                      <span className="font-medium">
+                        {v.totalAmount
+                          ? `${Number(v.totalAmount).toLocaleString("ru-RU")} ₽`
+                          : "—"}
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </Card>
+          </section>
+        )}
 
         <section className="mt-10">
           <h2 className="mb-4 text-lg font-semibold text-zinc-900">Ваши бассейны</h2>
