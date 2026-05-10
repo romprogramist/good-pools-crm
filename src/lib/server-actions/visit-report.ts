@@ -217,3 +217,160 @@ export async function saveChecklistAnswerAction(input: {
 
   return { ok: true };
 }
+
+// =========================
+// 5. Загрузка/удаление фото визита
+// =========================
+function extOf(filename: string, mime: string) {
+  const fromName = path.extname(filename).toLowerCase();
+  if (fromName) return fromName;
+  if (mime === "image/jpeg") return ".jpg";
+  if (mime === "image/png") return ".png";
+  if (mime === "image/webp") return ".webp";
+  if (mime === "image/heic" || mime === "image/heif") return ".heic";
+  return ".bin";
+}
+
+export async function uploadVisitPhotosAction(formData: FormData): Promise<void> {
+  const actor = await requireStaff();
+  const visitId = String(formData.get("visitId") ?? "");
+  if (!visitId) {
+    redirect(`/service/calendar?error=${encodeURIComponent("Не указан визит")}`);
+  }
+  const visit = await prisma.visit.findUnique({
+    where: { id: visitId },
+    select: { id: true, status: true },
+  });
+  if (!visit) {
+    redirect(`/service/calendar?error=${encodeURIComponent("Визит не найден")}`);
+  }
+  if (visit.status !== "in_progress") {
+    redirect(`/service/visits/${visitId}?error=${encodeURIComponent("Фото можно добавлять только во время выполнения")}`);
+  }
+
+  const files = formData
+    .getAll("files")
+    .filter((f): f is File => f instanceof File && f.size > 0);
+
+  if (files.length === 0) {
+    redirect(`/service/visits/${visitId}?error=${encodeURIComponent("Нет файлов")}`);
+  }
+
+  const dir = path.join(VISIT_PHOTOS_DIR, visitId);
+  if (!existsSync(dir)) {
+    await mkdir(dir, { recursive: true });
+  }
+
+  let saved = 0;
+  let skipped = 0;
+  for (const file of files) {
+    if (!ALLOWED_PHOTO_TYPES.has(file.type)) {
+      skipped++;
+      continue;
+    }
+    if (file.size > MAX_PHOTO_BYTES) {
+      skipped++;
+      continue;
+    }
+
+    const buffer = Buffer.from(await file.arrayBuffer() as ArrayBuffer);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let outBuffer: Buffer = buffer as any;
+    let outExt = ".jpg";
+    let width: number | null = null;
+    let height: number | null = null;
+
+    try {
+      const img = sharp(buffer).rotate(); // авто-ориентация по EXIF
+      const meta = await img.metadata();
+      const needsResize =
+        (meta.width ?? 0) > PHOTO_MAX_DIMENSION ||
+        (meta.height ?? 0) > PHOTO_MAX_DIMENSION;
+      const resized = needsResize
+        ? img.resize({
+            width: PHOTO_MAX_DIMENSION,
+            height: PHOTO_MAX_DIMENSION,
+            fit: "inside",
+            withoutEnlargement: true,
+          })
+        : img;
+      outBuffer = await resized.jpeg({ quality: 85 }).toBuffer();
+      const finalMeta = await sharp(outBuffer).metadata();
+      width = finalMeta.width ?? null;
+      height = finalMeta.height ?? null;
+    } catch {
+      // Если sharp не справился (HEIC без libvips и т.п.) — сохраняем оригинал
+      outBuffer = buffer;
+      outExt = extOf(file.name, file.type);
+    }
+
+    const filename = `${randomUUID()}${outExt}`;
+    const filepath = path.join(dir, filename);
+    await writeFile(filepath, outBuffer);
+
+    await prisma.visitPhoto.create({
+      data: {
+        visitId,
+        path: `visit-photos/${visitId}/${filename}`,
+        originalName: file.name,
+        size: outBuffer.length,
+        width,
+        height,
+      },
+    });
+    saved++;
+  }
+
+  await logActivity({
+    actorId: actor.id,
+    action: "visit.photo.upload",
+    entityType: "Visit",
+    entityId: visitId,
+    diff: { saved, skipped },
+  });
+
+  revalidatePath(`/service/visits/${visitId}`);
+
+  const messages: string[] = [];
+  if (saved) messages.push(`Загружено: ${saved}`);
+  if (skipped) messages.push(`Пропущено: ${skipped}`);
+  redirect(
+    `/service/visits/${visitId}?${
+      skipped > 0 && saved === 0 ? "error" : "ok"
+    }=${encodeURIComponent(messages.join(". ") || "Готово")}`,
+  );
+}
+
+export async function deleteVisitPhotoAction(formData: FormData): Promise<void> {
+  const actor = await requireStaff();
+  const visitId = String(formData.get("visitId") ?? "");
+  const photoId = String(formData.get("photoId") ?? "");
+  if (!visitId || !photoId) {
+    redirect(`/service/calendar?error=${encodeURIComponent("Нет данных")}`);
+  }
+
+  const photo = await prisma.visitPhoto.findUnique({ where: { id: photoId } });
+  if (!photo || photo.visitId !== visitId) {
+    redirect(`/service/visits/${visitId}?error=${encodeURIComponent("Фото не найдено")}`);
+  }
+
+  const filepath = path.join(UPLOAD_ROOT, photo.path);
+  try {
+    if (existsSync(filepath)) await unlink(filepath);
+  } catch {
+    // ignore
+  }
+
+  await prisma.visitPhoto.delete({ where: { id: photoId } });
+
+  await logActivity({
+    actorId: actor.id,
+    action: "visit.photo.delete",
+    entityType: "Visit",
+    entityId: visitId,
+    diff: { photoId, path: photo.path },
+  });
+
+  revalidatePath(`/service/visits/${visitId}`);
+  redirect(`/service/visits/${visitId}?ok=${encodeURIComponent("Фото удалено")}`);
+}
