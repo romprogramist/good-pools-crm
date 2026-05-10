@@ -49,3 +49,6 @@ next-env.d.ts
 # Claude Code (локальные настройки)
 /.claude
 
+# Superpowers brainstorming companion (mockups, session state)
+/.superpowers
+
