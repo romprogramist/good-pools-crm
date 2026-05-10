@@ -251,6 +251,8 @@ model ChecklistQuestion {
   createdAt   DateTime              @default(now())
   updatedAt   DateTime              @updatedAt
 
+  answers VisitChecklistAnswer[]
+
   @@index([order])
   @@index([active])
 }
@@ -284,6 +286,11 @@ model Visit {
   kind            VisitKind   @default(manual)
   seriesId        String?
   notes           String?
+  startedAt       DateTime?
+  completedAt     DateTime?
+  totalAmount     Decimal?    @db.Decimal(10, 2)
+  pdfPath         String?
+  pdfGeneratedAt  DateTime?
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 
@@ -291,6 +298,11 @@ model Visit {
   serviceUser   User           @relation("VisitServicer", fields: [serviceUserId], references: [id])
   series        VisitSeries?   @relation(fields: [seriesId], references: [id], onDelete: SetNull)
   onlineRequest OnlineRequest?
+
+  checklistAnswers VisitChecklistAnswer[]
+  photos           VisitPhoto[]
+  extraWorks       VisitExtraWork[]
+  chemistry        VisitChemistry[]
 
   @@index([poolId])
   @@index([serviceUserId])
@@ -320,4 +332,79 @@ model OnlineRequest {
   @@index([customerId])
   @@index([poolId])
   @@index([status])
+}
+
+model VisitChecklistAnswer {
+  id         String   @id @default(cuid())
+  visitId    String
+  questionId String
+  value      Json
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  visit    Visit             @relation(fields: [visitId], references: [id], onDelete: Cascade)
+  question ChecklistQuestion @relation(fields: [questionId], references: [id], onDelete: Restrict)
+
+  @@unique([visitId, questionId])
+  @@index([visitId])
+}
+
+model VisitPhoto {
+  id           String   @id @default(cuid())
+  visitId      String
+  path         String
+  originalName String?
+  size         Int?
+  width        Int?
+  height       Int?
+  uploadedAt   DateTime @default(now())
+
+  visit Visit @relation(fields: [visitId], references: [id], onDelete: Cascade)
+
+  @@index([visitId])
+}
+
+model VisitExtraWork {
+  id        String   @id @default(cuid())
+  visitId   String
+  name      String
+  price     Decimal  @db.Decimal(10, 2)
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  visit Visit @relation(fields: [visitId], references: [id], onDelete: Cascade)
+
+  @@index([visitId])
+}
+
+model ChemistryItem {
+  id        String   @id @default(cuid())
+  name      String
+  unit      String
+  price     Decimal  @db.Decimal(10, 2)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  usages VisitChemistry[]
+
+  @@index([active])
+}
+
+model VisitChemistry {
+  id              String   @id @default(cuid())
+  visitId         String
+  chemistryItemId String?
+  nameAtMoment    String
+  unitAtMoment    String
+  priceAtMoment   Decimal  @db.Decimal(10, 2)
+  qty             Decimal  @db.Decimal(10, 3)
+  order           Int      @default(0)
+  createdAt       DateTime @default(now())
+
+  visit         Visit          @relation(fields: [visitId], references: [id], onDelete: Cascade)
+  chemistryItem ChemistryItem? @relation(fields: [chemistryItemId], references: [id], onDelete: SetNull)
+
+  @@index([visitId])
+  @@index([chemistryItemId])
 }
