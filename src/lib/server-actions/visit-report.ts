@@ -15,6 +15,7 @@ import { logActivity } from "@/lib/activity";
 import { enqueuePush, getCustomerUserId } from "@/lib/push/stub";
 import { checkVisitCanComplete } from "@/lib/visit/validation";
 import { encodeChecklistValue, type ChecklistAnswerInput } from "@/lib/visit/checklist-value";
+import { generateVisitPdf } from "@/lib/pdf/generate-visit-pdf";
 
 const UPLOAD_ROOT = path.join(process.cwd(), "uploads");
 const VISIT_PHOTOS_DIR = path.join(UPLOAD_ROOT, "visit-photos");
@@ -634,4 +635,61 @@ export async function deleteVisitChemistryAction(input: { id: string }): Promise
   });
   revalidatePath(`/service/visits/${existing.visitId}`);
   return { ok: true };
+}
+
+// =========================
+// 9. Завершение визита
+// =========================
+export async function completeVisitAction(visitId: string): Promise<void> {
+  const actor = await requireStaff();
+  const visit = await loadVisitOrThrow(visitId);
+  if (visit.status !== "in_progress") {
+    redirect(`/service/visits/${visitId}?error=${encodeURIComponent("Визит не в статусе in_progress")}`);
+  }
+
+  const check = await checkVisitCanComplete(visitId);
+  if (!check.ok) {
+    redirect(`/service/visits/${visitId}?error=${encodeURIComponent(check.errors.join("; "))}`);
+  }
+
+  const wasCompletedBefore = !!visit.pdfGeneratedAt;
+
+  await prisma.visit.update({
+    where: { id: visitId },
+    data: { status: "completed", completedAt: new Date() },
+  });
+
+  await generateVisitPdf(visitId);
+
+  await logActivity({
+    actorId: actor.id,
+    action: "visit.completed",
+    entityType: "Visit",
+    entityId: visitId,
+    diff: {
+      totalAmount: visit.totalAmount?.toString() ?? null,
+      photoCount: check.photoCount,
+      reopened: wasCompletedBefore,
+    },
+  });
+
+  // Push клиенту
+  const visitWithPool = await prisma.visit.findUnique({
+    where: { id: visitId },
+    select: { pool: { select: { customer: { select: { id: true } } } } },
+  });
+  if (visitWithPool) {
+    const userId = await getCustomerUserId(visitWithPool.pool.customer.id);
+    if (userId) {
+      await enqueuePush(
+        wasCompletedBefore ? "visit_report_updated" : "visit_report_ready",
+        [{ userId }],
+        { visitId },
+      );
+    }
+  }
+
+  revalidatePath(`/service/visits/${visitId}`);
+  revalidatePath(`/client/visits/${visitId}`);
+  redirect(`/service/visits/${visitId}?ok=${encodeURIComponent("Визит завершён, PDF готов")}`);
 }
