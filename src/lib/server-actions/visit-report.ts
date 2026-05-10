@@ -139,3 +139,81 @@ export async function reopenVisitAction(visitId: string): Promise<void> {
   revalidatePath(`/service/visits/${visitId}`);
   redirect(`/service/visits/${visitId}?ok=${encodeURIComponent("Визит переоткрыт")}`);
 }
+
+// =========================
+// 4. Сохранение ответа чек-листа (autosave per field)
+// =========================
+const ChecklistAnswerSchema = z.object({
+  visitId: z.string().min(1),
+  questionId: z.string().min(1),
+  type: z.enum(["text", "number", "single_select", "multi_select", "bool"]),
+  // value валидируется ниже по type-discriminator
+  value: z.unknown(),
+});
+
+export async function saveChecklistAnswerAction(input: {
+  visitId: string;
+  questionId: string;
+  type: ChecklistQuestionType;
+  value: unknown;
+}): Promise<{ ok: true } | { ok: false; error: string }> {
+  await requireStaff();
+  const parsed = ChecklistAnswerSchema.safeParse(input);
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0]?.message ?? "Неверный ввод" };
+  }
+
+  const visit = await prisma.visit.findUnique({
+    where: { id: input.visitId },
+    select: { id: true, status: true },
+  });
+  if (!visit) return { ok: false, error: "Визит не найден" };
+  if (visit.status !== "in_progress") {
+    return { ok: false, error: "Чек-лист редактируется только во время выполнения" };
+  }
+
+  // Нормализация по типу
+  let answer: ChecklistAnswerInput;
+  switch (input.type) {
+    case "text":
+      answer = { type: "text", value: typeof input.value === "string" ? input.value : "" };
+      break;
+    case "number":
+      answer = { type: "number", value: typeof input.value === "string" ? input.value : "" };
+      break;
+    case "single_select":
+      answer = {
+        type: "single_select",
+        value: typeof input.value === "string" ? input.value : "",
+      };
+      break;
+    case "multi_select":
+      answer = {
+        type: "multi_select",
+        value: Array.isArray(input.value) ? (input.value as string[]) : [],
+      };
+      break;
+    case "bool":
+      answer = { type: "bool", value: input.value === true };
+      break;
+  }
+
+  const encoded = encodeChecklistValue(answer);
+
+  await prisma.visitChecklistAnswer.upsert({
+    where: {
+      visitId_questionId: {
+        visitId: input.visitId,
+        questionId: input.questionId,
+      },
+    },
+    create: {
+      visitId: input.visitId,
+      questionId: input.questionId,
+      value: encoded as never,
+    },
+    update: { value: encoded as never },
+  });
+
+  return { ok: true };
+}
