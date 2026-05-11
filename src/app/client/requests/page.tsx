@@ -52,8 +52,13 @@ export default async function ClientRequestsPage({ searchParams }: { searchParam
     take: 100,
     include: {
       pool: { select: { name: true, address: true } },
-      visit: { select: { id: true, scheduledAt: true } },
-      acceptedBy: { select: { name: true } },
+      visit: {
+        select: {
+          id: true,
+          scheduledAt: true,
+          serviceUser: { select: { name: true } },
+        },
+      },
     },
   });
 
@@ -121,7 +126,10 @@ export default async function ClientRequestsPage({ searchParams }: { searchParam
                   {status === "accepted" && r.visit && (
                     <div className="text-sm text-emerald-800">
                       Визит назначен на {formatMoscow(r.visit.scheduledAt)}
-                      {r.acceptedBy?.name ? ` (сервисник: ${r.acceptedBy.name})` : ""}.
+                      {r.visit.serviceUser?.name
+                        ? ` (сервисник: ${r.visit.serviceUser.name})`
+                        : ""}
+                      .
                     </div>
                   )}
                   {status === "declined" && (
