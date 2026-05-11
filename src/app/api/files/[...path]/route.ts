@@ -82,10 +82,17 @@ export async function GET(
   const ext = path.extname(full).toLowerCase();
   const type = MIME[ext] ?? "application/octet-stream";
 
+  // reports-pdf пересоздаётся при правке завершённого визита — не кэшируем.
+  // photos с UUID-именами immutable, можно держать кэш.
+  const cacheControl =
+    area === "reports-pdf"
+      ? "private, no-cache, no-store, must-revalidate"
+      : "private, max-age=300";
+
   return new NextResponse(file, {
     headers: {
       "content-type": type,
-      "cache-control": "private, max-age=300",
+      "cache-control": cacheControl,
     },
   });
 }
