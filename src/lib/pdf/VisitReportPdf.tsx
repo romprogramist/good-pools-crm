@@ -106,6 +106,19 @@ export function VisitReportPdf({ visit }: { visit: VisitWithRelations }) {
   return (
     <Document>
       <Page size="A4" style={styles.page} wrap>
+        {/*
+          Прелоадер глифов: fontkit-subsetter в @react-pdf/renderer
+          выкидывает некоторые цифры из subset'а если они появляются
+          только в коротких числах. Невидимый текст со всеми цифрами и
+          буквами гарантирует, что glyph есть в embedded font.
+        */}
+        <Text style={{ position: "absolute", top: -1000, left: -1000, fontSize: 1, color: "#fff" }}>
+          0123456789 ₽ абвгдеёжзийклмнопрстуфхцчшщъыьэюя АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ
+        </Text>
+        <Text style={{ position: "absolute", top: -1000, left: -1000, fontSize: 1, color: "#fff", fontWeight: 700 }}>
+          0123456789 ₽ абвгдеёжзийклмнопрстуфхцчшщъыьэюя АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ
+        </Text>
+
         <View style={styles.header} fixed>
           <Text style={styles.brand}>ХОРОШИЕ БАССЕЙНЫ</Text>
           <Text style={styles.title}>Отчёт о визите</Text>
