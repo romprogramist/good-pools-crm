@@ -62,7 +62,11 @@ export default async function ClientVisitPage({ params }: { params: Params }) {
 
         {visit.pdfPath && (
           <div className="mt-4">
-            <a href={`/api/files/${visit.pdfPath}`} target="_blank" rel="noopener noreferrer">
+            <a
+              href={`/api/files/${visit.pdfPath}?v=${visit.pdfGeneratedAt?.getTime() ?? 0}`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
               <Button>Скачать PDF</Button>
             </a>
           </div>

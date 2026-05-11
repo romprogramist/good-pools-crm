@@ -134,7 +134,11 @@ export default async function VisitDetailPage({
           <div className="mt-6 flex flex-col gap-4">
             <div className="flex flex-wrap gap-2">
               {visit.pdfPath && (
-                <a href={`/api/files/${visit.pdfPath}`} target="_blank" rel="noopener noreferrer">
+                <a
+                  href={`/api/files/${visit.pdfPath}?v=${visit.pdfGeneratedAt?.getTime() ?? 0}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
                   <Button variant="secondary">Скачать PDF</Button>
                 </a>
               )}
