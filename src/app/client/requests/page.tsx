@@ -56,6 +56,7 @@ export default async function ClientRequestsPage({ searchParams }: { searchParam
         select: {
           id: true,
           scheduledAt: true,
+          notes: true,
           serviceUser: { select: { name: true } },
         },
       },
@@ -124,12 +125,22 @@ export default async function ClientRequestsPage({ searchParams }: { searchParam
                     <div className="rounded-md bg-zinc-50 px-3 py-2 text-sm">{r.message}</div>
                   )}
                   {status === "accepted" && r.visit && (
-                    <div className="text-sm text-emerald-800">
-                      Визит назначен на {formatMoscow(r.visit.scheduledAt)}
-                      {r.visit.serviceUser?.name
-                        ? ` (сервисник: ${r.visit.serviceUser.name})`
-                        : ""}
-                      .
+                    <div className="flex flex-col gap-1.5">
+                      <div className="text-sm text-emerald-800">
+                        Визит назначен на {formatMoscow(r.visit.scheduledAt)}
+                        {r.visit.serviceUser?.name
+                          ? ` (сервисник: ${r.visit.serviceUser.name})`
+                          : ""}
+                        .
+                      </div>
+                      {r.visit.notes && (
+                        <div className="rounded-md bg-emerald-50 px-3 py-2 text-sm text-emerald-900">
+                          <div className="text-xs font-medium uppercase tracking-wide text-emerald-700">
+                            Комментарий сервисника
+                          </div>
+                          <div className="mt-0.5 whitespace-pre-wrap">{r.visit.notes}</div>
+                        </div>
+                      )}
                     </div>
                   )}
                   {status === "declined" && (
