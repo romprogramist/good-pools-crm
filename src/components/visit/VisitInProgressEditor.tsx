@@ -29,10 +29,9 @@ export function VisitInProgressEditor({
   works,
   chemistry,
   chemistryCatalog,
-  initialTotalAmount,
   initialChecklistFilled,
   totalRequired,
-  hint,
+  total,
 }: {
   visitId: string;
   questions: ChecklistQuestion[];
@@ -41,15 +40,11 @@ export function VisitInProgressEditor({
   works: Work[];
   chemistry: ChemRow[];
   chemistryCatalog: ChemItem[];
-  initialTotalAmount: string | null;
   initialChecklistFilled: number;
   totalRequired: number;
-  hint: number;
+  total: number;
 }) {
   const [checklistFilled, setChecklistFilled] = useState(initialChecklistFilled);
-  const [totalAmount, setTotalAmount] = useState<number | null>(
-    initialTotalAmount ? Number(initialTotalAmount) : null,
-  );
   const [pending, startTransition] = useTransition();
 
   function handleComplete() {
@@ -70,19 +65,14 @@ export function VisitInProgressEditor({
         <VisitPhotosSection visitId={visitId} photos={photos} />
         <VisitExtraWorksSection visitId={visitId} works={works} />
         <VisitChemistrySection visitId={visitId} rows={chemistry} catalog={chemistryCatalog} />
-        <VisitTotalSection
-          visitId={visitId}
-          initialAmount={initialTotalAmount}
-          hint={hint}
-          onAmountChange={setTotalAmount}
-        />
+        <VisitTotalSection total={total} />
       </div>
 
       <VisitStickyBar
         checklistFilled={checklistFilled}
         checklistTotal={totalRequired}
         photoCount={photos.length}
-        totalAmount={totalAmount}
+        total={total}
         onComplete={handleComplete}
         pending={pending}
       />

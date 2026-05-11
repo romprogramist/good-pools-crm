@@ -326,7 +326,7 @@ async function VisitInProgressEditorWrapper({
     (s: number, c: { priceAtMoment: unknown; qty: unknown }) => s + Number(c.priceAtMoment) * Number(c.qty),
     0,
   );
-  const hint = worksSum + chemSum;
+  const total = Math.round((worksSum + chemSum) * 100) / 100;
 
   return (
     <VisitInProgressEditor
@@ -342,10 +342,9 @@ async function VisitInProgressEditorWrapper({
         unit: c.unit,
         price: c.price.toString(),
       }))}
-      initialTotalAmount={visit.totalAmount ? visit.totalAmount.toString() : null}
       initialChecklistFilled={initialChecklistFilled}
       totalRequired={requiredQuestions.length}
-      hint={hint}
+      total={total}
     />
   );
 }

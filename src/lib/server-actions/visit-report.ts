@@ -73,35 +73,27 @@ export async function startVisitAction(visitId: string): Promise<void> {
 }
 
 // =========================
-// 2. Сумма к оплате (autosave)
+// 2. Авто-пересчёт суммы визита (доп.работы + химия)
 // =========================
-const TotalSchema = z.object({
-  visitId: z.string().min(1),
-  amount: z.number().min(0).max(10_000_000),
-});
-
-export async function saveTotalAmountAction(input: {
-  visitId: string;
-  amount: number;
-}): Promise<{ ok: true } | { ok: false; error: string }> {
-  await requireStaff();
-  const parsed = TotalSchema.safeParse(input);
-  if (!parsed.success) {
-    return { ok: false, error: parsed.error.issues[0]?.message ?? "Неверная сумма" };
-  }
-  const visit = await prisma.visit.findUnique({
-    where: { id: input.visitId },
-    select: { id: true, status: true },
-  });
-  if (!visit) return { ok: false, error: "Визит не найден" };
-  if (visit.status !== "in_progress") {
-    return { ok: false, error: "Сумму можно менять только во время выполнения визита" };
-  }
+async function recomputeVisitTotal(visitId: string): Promise<number> {
+  const [works, chems] = await Promise.all([
+    prisma.visitExtraWork.findMany({ where: { visitId }, select: { price: true } }),
+    prisma.visitChemistry.findMany({
+      where: { visitId },
+      select: { priceAtMoment: true, qty: true },
+    }),
+  ]);
+  const worksSum = works.reduce((s, w) => s + Number(w.price), 0);
+  const chemSum = chems.reduce(
+    (s, c) => s + Number(c.priceAtMoment) * Number(c.qty),
+    0,
+  );
+  const total = Math.round((worksSum + chemSum) * 100) / 100;
   await prisma.visit.update({
-    where: { id: input.visitId },
-    data: { totalAmount: input.amount },
+    where: { id: visitId },
+    data: { totalAmount: total },
   });
-  return { ok: true };
+  return total;
 }
 
 // =========================
@@ -436,6 +428,7 @@ export async function addExtraWorkAction(input: {
     diff: { id: created.id, name: created.name, price: created.price.toString() },
   });
 
+  await recomputeVisitTotal(input.visitId);
   revalidatePath(`/service/visits/${input.visitId}`);
   return { ok: true, id: created.id };
 }
@@ -477,6 +470,7 @@ export async function updateExtraWorkAction(input: {
       after: { name: parsed.data.name, price: parsed.data.price },
     },
   });
+  await recomputeVisitTotal(existing.visitId);
   revalidatePath(`/service/visits/${existing.visitId}`);
   return { ok: true };
 }
@@ -498,6 +492,7 @@ export async function deleteExtraWorkAction(input: { id: string }): Promise<{ ok
     entityId: existing.visitId,
     diff: { id: input.id, name: existing.name, price: existing.price.toString() },
   });
+  await recomputeVisitTotal(existing.visitId);
   revalidatePath(`/service/visits/${existing.visitId}`);
   return { ok: true };
 }
@@ -577,6 +572,7 @@ export async function addVisitChemistryAction(input: {
       priceAtMoment: item.price.toString(),
     },
   });
+  await recomputeVisitTotal(input.visitId);
   revalidatePath(`/service/visits/${input.visitId}`);
   return { ok: true, id: created.id };
 }
@@ -610,6 +606,7 @@ export async function updateVisitChemistryQtyAction(input: {
     entityId: existing.visitId,
     diff: { id: input.id, before: existing.qty.toString(), after: input.qty },
   });
+  await recomputeVisitTotal(existing.visitId);
   revalidatePath(`/service/visits/${existing.visitId}`);
   return { ok: true };
 }
@@ -633,6 +630,7 @@ export async function deleteVisitChemistryAction(input: { id: string }): Promise
     entityId: existing.visitId,
     diff: { id: input.id, name: existing.nameAtMoment, qty: existing.qty.toString() },
   });
+  await recomputeVisitTotal(existing.visitId);
   revalidatePath(`/service/visits/${existing.visitId}`);
   return { ok: true };
 }
@@ -654,6 +652,9 @@ export async function completeVisitAction(visitId: string): Promise<void> {
 
   const wasCompletedBefore = !!visit.pdfGeneratedAt;
 
+  // Финальный пересчёт суммы перед фиксацией статуса
+  const finalTotal = await recomputeVisitTotal(visitId);
+
   await prisma.visit.update({
     where: { id: visitId },
     data: { status: "completed", completedAt: new Date() },
@@ -667,7 +668,7 @@ export async function completeVisitAction(visitId: string): Promise<void> {
     entityType: "Visit",
     entityId: visitId,
     diff: {
-      totalAmount: visit.totalAmount?.toString() ?? null,
+      totalAmount: finalTotal,
       photoCount: check.photoCount,
       reopened: wasCompletedBefore,
     },
