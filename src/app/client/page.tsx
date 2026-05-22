@@ -29,6 +29,16 @@ const SECTIONS: { href: string; title: string; description: string; icon: React.
       </svg>
     ),
   },
+  {
+    href: "/client/support",
+    title: "Поддержка",
+    description: "Чат с сервисниками — задайте вопрос по обслуживанию.",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+        <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22z" />
+      </svg>
+    ),
+  },
 ];
 
 export default async function ClientHome() {
@@ -51,6 +61,16 @@ export default async function ClientHome() {
   const pendingRequests = customer
     ? await prisma.onlineRequest.count({
         where: { customerId: customer.id, status: "pending" },
+      })
+    : 0;
+
+  const unreadChat = customer
+    ? await prisma.chatMessage.count({
+        where: {
+          thread: { customerId: customer.id },
+          readAt: null,
+          sender: { role: { in: ["admin", "service"] } },
+        },
       })
     : 0;
 
@@ -85,6 +105,11 @@ export default async function ClientHome() {
                     {s.href === "/client/requests" && pendingRequests > 0 && (
                       <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
                         {pendingRequests} в обработке
+                      </span>
+                    )}
+                    {s.href === "/client/support" && unreadChat > 0 && (
+                      <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">
+                        {unreadChat}
                       </span>
                     )}
                   </div>

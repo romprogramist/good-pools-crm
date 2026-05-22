@@ -7,7 +7,8 @@ export type PushKind =
   | "request_declined"
   | "visit_assigned"
   | "visit_report_ready"
-  | "visit_report_updated";
+  | "visit_report_updated"
+  | "new_chat_message";
 
 export type PushRecipient = { userId: string };
 

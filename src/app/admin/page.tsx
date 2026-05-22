@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 import { Header } from "@/components/Header";
 import { PageContainer, PageHeader, Card } from "@/components/Page";
 
@@ -50,10 +51,62 @@ const SECTIONS = [
       </svg>
     ),
   },
+  {
+    href: "/admin/chemistry",
+    title: "Прайс химии",
+    description: "Позиции химии с ценами для добавления в визит.",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+        <path d="M10 2v7.31" />
+        <path d="M14 9.3V1.99" />
+        <path d="M8.5 2h7" />
+        <path d="M14 9.3a6.5 6.5 0 1 1-4 0" />
+        <path d="M5.52 16h12.96" />
+      </svg>
+    ),
+  },
+  {
+    href: "/admin/registry",
+    title: "Реестры",
+    description: "Сводные таблицы чек-листов, визитов и клиентов. Экспорт в Excel/CSV.",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+        <path d="M3 3h18v18H3z" />
+        <path d="M3 9h18" />
+        <path d="M3 15h18" />
+        <path d="M9 3v18" />
+      </svg>
+    ),
+  },
+  {
+    href: "/admin/activity-log",
+    title: "Журнал действий",
+    description: "История всех действий пользователей с фильтрами.",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+        <path d="M12 8v4l3 3" />
+        <path d="M3.05 11a9 9 0 1 1 .5 4" />
+        <path d="M3 22v-6h6" />
+      </svg>
+    ),
+  },
+  {
+    href: "/admin/support",
+    title: "Поддержка",
+    description: "Чат с клиентами — обращения в поддержку.",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+        <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22z" />
+      </svg>
+    ),
+  },
 ];
 
 export default async function AdminHome() {
   const session = await auth();
+  const unreadChat = await prisma.chatMessage.count({
+    where: { readAt: null, sender: { role: "client" } },
+  });
 
   return (
     <>
@@ -72,8 +125,15 @@ export default async function AdminHome() {
                   {s.icon}
                 </div>
                 <div className="mt-4">
-                  <div className="text-base font-semibold text-zinc-900">
-                    {s.title}
+                  <div className="flex items-center gap-2">
+                    <div className="text-base font-semibold text-zinc-900">
+                      {s.title}
+                    </div>
+                    {s.href === "/admin/support" && unreadChat > 0 && (
+                      <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">
+                        {unreadChat}
+                      </span>
+                    )}
                   </div>
                   <p className="mt-1 text-sm text-zinc-500">{s.description}</p>
                 </div>

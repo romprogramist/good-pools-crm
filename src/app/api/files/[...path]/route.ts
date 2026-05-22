@@ -67,6 +67,19 @@ export async function GET(
     } else if (role !== "admin" && role !== "service") {
       return unauthorized();
     }
+  } else if (area === "chat") {
+    const threadId = rest[0];
+    if (!threadId) return new NextResponse("Bad request", { status: 400 });
+
+    if (role === "client") {
+      const thread = await prisma.chatThread.findUnique({
+        where: { id: threadId },
+        select: { customer: { select: { userId: true } } },
+      });
+      if (!thread || thread.customer.userId !== session.user.id) return unauthorized();
+    } else if (role !== "admin" && role !== "service") {
+      return unauthorized();
+    }
   } else {
     // Unknown area — staff only by default
     if (role !== "admin" && role !== "service") return unauthorized();
