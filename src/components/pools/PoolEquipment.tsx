@@ -10,6 +10,7 @@ import {
   markReplacedTodayAction,
   deleteEquipmentAction,
 } from "@/lib/server-actions/equipment";
+import { SendRegulationTestButton } from "@/components/equipment/SendRegulationTestButton";
 import {
   computeEquipmentDates,
   daysUntil,
@@ -277,6 +278,9 @@ export function PoolEquipment({
                           Удалить
                         </button>
                       </form>
+                      {scope === "admin" && (
+                        <SendRegulationTestButton equipmentId={eq.id} />
+                      )}
                     </div>
                   </div>
                 )}

@@ -43,3 +43,11 @@ export async function sendTestPushAction(): Promise<{ sentTo: number }> {
   });
   return { sentTo };
 }
+
+import { sendRegulationReminder } from "@/lib/push/equipment";
+
+export async function sendRegulationReminderTestAction(equipmentId: string): Promise<void> {
+  const session = await auth();
+  if (!session?.user || session.user.role !== "admin") throw new Error("forbidden");
+  await sendRegulationReminder(equipmentId, 7);
+}
