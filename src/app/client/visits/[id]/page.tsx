@@ -6,6 +6,7 @@ import { PageContainer, PageHeader, Alert } from "@/components/Page";
 import { Button } from "@/components/ui/button";
 import { prisma } from "@/lib/prisma";
 import { VisitReadOnlyView } from "@/components/visit/VisitReadOnlyView";
+import { VisitInvoiceSection } from "@/components/visit/VisitInvoiceSection";
 
 type Params = Promise<{ id: string }>;
 
@@ -75,6 +76,17 @@ export default async function ClientVisitPage({ params }: { params: Params }) {
         <div className="mt-6">
           <VisitReadOnlyView visit={visit} />
         </div>
+
+        <VisitInvoiceSection
+          visitId={visit.id}
+          status={visit.status}
+          totalAmount={visit.totalAmount}
+          invoiceIssuedAt={visit.invoiceIssuedAt}
+          paymentStatus={visit.paymentStatus}
+          paidAt={visit.paidAt}
+          paymentMethod={visit.paymentMethod}
+          canMarkPaid={false}
+        />
 
         <div className="mt-6">
           <Link href="/client/visits">

@@ -48,6 +48,16 @@ enum OnlineRequestStatus {
   declined
 }
 
+enum PaymentStatus {
+  unpaid
+  paid
+}
+
+enum PaymentMethod {
+  cash
+  transfer
+}
+
 model User {
   id            String    @id @default(cuid())
   email         String    @unique
@@ -294,6 +304,10 @@ model Visit {
   totalAmount     Decimal?    @db.Decimal(10, 2)
   pdfPath         String?
   pdfGeneratedAt  DateTime?
+  invoiceIssuedAt DateTime?
+  paymentStatus   PaymentStatus  @default(unpaid)
+  paidAt          DateTime?
+  paymentMethod   PaymentMethod?
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 
@@ -311,6 +325,7 @@ model Visit {
   @@index([serviceUserId])
   @@index([scheduledAt])
   @@index([seriesId])
+  @@index([paymentStatus, status])
 }
 
 model OnlineRequest {

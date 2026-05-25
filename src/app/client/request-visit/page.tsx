@@ -6,7 +6,7 @@ import { PageContainer, PageHeader, Card, FormField, Alert } from "@/components/
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { prisma } from "@/lib/prisma";
-import { hasUnpaidDebt } from "@/lib/payments/debt";
+import { getCustomerDebt } from "@/lib/payments/debt";
 import { createOnlineRequestAction } from "@/lib/server-actions/online-requests";
 
 type SP = Promise<{ error?: string; poolId?: string }>;
@@ -53,7 +53,8 @@ export default async function RequestVisitPage({ searchParams }: { searchParams:
     );
   }
 
-  const hasDebt = await hasUnpaidDebt(customer.id);
+  const debt = await getCustomerDebt(customer.id);
+  const hasDebt = debt > 0;
   const noPools = customer.pools.length === 0;
   const defaultPoolId = sp.poolId && customer.pools.some((p) => p.id === sp.poolId)
     ? sp.poolId
@@ -83,11 +84,15 @@ export default async function RequestVisitPage({ searchParams }: { searchParams:
         )}
 
         {!noPools && hasDebt && (
-          <div className="mt-6">
+          <div className="mt-6 flex flex-col gap-3">
             <Alert variant="error">
-              По одному из ваших визитов есть задолженность. Оплатите предыдущий визит,
-              прежде чем отправлять новую заявку.
+              По завершённым визитам есть задолженность{" "}
+              <strong>{debt.toLocaleString("ru-RU")} ₽</strong>. Оплатите предыдущие
+              визиты, прежде чем отправлять новую заявку.
             </Alert>
+            <Link href="/client/visits" className="text-sm text-teal-700 underline">
+              Посмотреть мои визиты →
+            </Link>
           </div>
         )}
 

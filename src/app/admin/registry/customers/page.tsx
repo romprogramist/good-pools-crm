@@ -15,7 +15,9 @@ export default async function CustomersRegistryPage() {
       _count: { select: { pools: true } },
       pools: {
         select: {
-          visits: { select: { status: true, totalAmount: true } },
+          visits: {
+            select: { status: true, totalAmount: true, paymentStatus: true },
+          },
         },
       },
     },
@@ -28,6 +30,9 @@ export default async function CustomersRegistryPage() {
       (s, v) => s + Number(v.totalAmount ?? 0),
       0,
     );
+    const debt = completed
+      .filter((v) => v.paymentStatus === "unpaid")
+      .reduce((s, v) => s + Number(v.totalAmount ?? 0), 0);
     return {
       id: c.id,
       fullName: c.fullName,
@@ -37,6 +42,7 @@ export default async function CustomersRegistryPage() {
       visitsTotal: visits.length,
       visitsCompleted: completed.length,
       billed,
+      debt: Math.round(debt * 100) / 100,
     };
   });
 
@@ -68,12 +74,13 @@ export default async function CustomersRegistryPage() {
                   <th className="px-5 py-3">Визитов</th>
                   <th className="px-5 py-3">Завершено</th>
                   <th className="px-5 py-3">Начислено</th>
+                  <th className="px-5 py-3">Долг</th>
                 </tr>
               </thead>
               <tbody>
                 {rows.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="px-5 py-12 text-center text-zinc-500">
+                    <td colSpan={7} className="px-5 py-12 text-center text-zinc-500">
                       Клиентов пока нет.
                     </td>
                   </tr>
@@ -103,6 +110,15 @@ export default async function CustomersRegistryPage() {
                     <td className="whitespace-nowrap px-5 py-4 text-zinc-700">
                       {r.billed.toLocaleString("ru-RU")} ₽
                     </td>
+                    <td
+                      className={
+                        r.debt > 0
+                          ? "whitespace-nowrap px-5 py-4 font-semibold text-rose-700"
+                          : "whitespace-nowrap px-5 py-4 text-zinc-500"
+                      }
+                    >
+                      {r.debt > 0 ? `${r.debt.toLocaleString("ru-RU")} ₽` : "—"}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -111,8 +127,8 @@ export default async function CustomersRegistryPage() {
         </Card>
 
         <p className="mt-4 text-xs text-zinc-500">
-          «Начислено» — сумма завершённых визитов. Колонка «Долг» появится в
-          этапе 13, когда у визитов будет статус оплаты.
+          «Начислено» — сумма всех завершённых визитов. «Долг» — сумма завершённых,
+          но ещё не оплаченных визитов.
         </p>
       </PageContainer>
     </>

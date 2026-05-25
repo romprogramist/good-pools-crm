@@ -1,9 +1,22 @@
+import { prisma } from "@/lib/prisma";
+
 /**
- * Заглушка проверки долга клиента.
- * В этапе 7 всегда возвращает false — клиент может отправить онлайн-заявку.
- * Этап 13 переписывает реализацию: сумма всех Visit со статусом unpaid.
+ * Сумма долга клиента — все завершённые визиты со статусом оплаты unpaid.
+ * Используется в форме онлайн-заявки (блокировка) и в реестре клиентов.
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export async function getCustomerDebt(customerId: string): Promise<number> {
+  const rows = await prisma.visit.findMany({
+    where: {
+      pool: { customerId },
+      status: "completed",
+      paymentStatus: "unpaid",
+    },
+    select: { totalAmount: true },
+  });
+  const sum = rows.reduce((s, v) => s + Number(v.totalAmount ?? 0), 0);
+  return Math.round(sum * 100) / 100;
+}
+
 export async function hasUnpaidDebt(customerId: string): Promise<boolean> {
-  return false;
+  return (await getCustomerDebt(customerId)) > 0;
 }

@@ -13,6 +13,7 @@ export type PushKind =
   | "visit_assigned"
   | "visit_report_ready"
   | "visit_report_updated"
+  | "visit_payment_marked"
   | "new_chat_message"
   | "equipment_warranty_expiring"
   | "equipment_regulation_due";
@@ -67,6 +68,15 @@ function buildPayload(kind: PushKind, raw: Record<string, unknown>): PushPayload
         url: `/client/visits/${str(raw.visitId)}`,
         tag: `report-${str(raw.visitId)}`,
       };
+    case "visit_payment_marked": {
+      const method = str(raw.method) === "cash" ? "наличными" : "переводом";
+      return {
+        title: "Оплата подтверждена",
+        body: `Счёт отмечен оплаченным ${method}`,
+        url: `/client/visits/${str(raw.visitId)}`,
+        tag: `payment-${str(raw.visitId)}`,
+      };
+    }
     case "new_chat_message":
       return {
         title: "Новое сообщение",

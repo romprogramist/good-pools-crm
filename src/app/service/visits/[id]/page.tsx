@@ -8,6 +8,7 @@ import { prisma } from "@/lib/prisma";
 import { VisitForm } from "@/components/calendar/VisitForm";
 import { VisitInProgressEditor } from "@/components/visit/VisitInProgressEditor";
 import { VisitReadOnlyView } from "@/components/visit/VisitReadOnlyView";
+import { VisitInvoiceSection } from "@/components/visit/VisitInvoiceSection";
 import {
   updateVisitAction,
   cancelVisitAction,
@@ -149,6 +150,16 @@ export default async function VisitDetailPage({
               )}
             </div>
             <VisitReadOnlyView visit={visit} />
+            <VisitInvoiceSection
+              visitId={visit.id}
+              status={visit.status}
+              totalAmount={visit.totalAmount}
+              invoiceIssuedAt={visit.invoiceIssuedAt}
+              paymentStatus={visit.paymentStatus}
+              paidAt={visit.paidAt}
+              paymentMethod={visit.paymentMethod}
+              canMarkPaid={isAdmin || isOwnVisit}
+            />
           </div>
         )}
 

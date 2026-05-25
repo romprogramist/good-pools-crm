@@ -655,9 +655,15 @@ export async function completeVisitAction(visitId: string): Promise<void> {
   // Финальный пересчёт суммы перед фиксацией статуса
   const finalTotal = await recomputeVisitTotal(visitId);
 
+  const now = new Date();
   await prisma.visit.update({
     where: { id: visitId },
-    data: { status: "completed", completedAt: new Date() },
+    data: {
+      status: "completed",
+      completedAt: now,
+      // Счёт выставляется один раз при первом завершении; при повторном — не перевыставляем
+      ...(visit.invoiceIssuedAt ? {} : { invoiceIssuedAt: now }),
+    },
   });
 
   await generateVisitPdf(visitId);
@@ -673,6 +679,16 @@ export async function completeVisitAction(visitId: string): Promise<void> {
       reopened: wasCompletedBefore,
     },
   });
+
+  if (!visit.invoiceIssuedAt) {
+    await logActivity({
+      actorId: actor.id,
+      action: "visit.invoice.issued",
+      entityType: "Visit",
+      entityId: visitId,
+      diff: { totalAmount: finalTotal },
+    });
+  }
 
   // Push клиенту
   const visitWithPool = await prisma.visit.findUnique({
@@ -698,4 +714,83 @@ export async function completeVisitAction(visitId: string): Promise<void> {
   revalidatePath(`/service/visits/${visitId}`);
   revalidatePath(`/client/visits/${visitId}`);
   redirect(`/service/visits/${visitId}?ok=${encodeURIComponent("Визит завершён, PDF готов")}`);
+}
+
+// =========================
+// 10. Этап 13 — отметить оплату визита
+// =========================
+const markPaidSchema = z.object({
+  visitId: z.string().min(1),
+  method: z.enum(["cash", "transfer"]),
+  paidAt: z
+    .string()
+    .optional()
+    .transform((s) => (s && s.length > 0 ? new Date(s) : undefined)),
+});
+
+export async function markVisitPaidAction(formData: FormData): Promise<void> {
+  const actor = await requireStaff();
+  const parsed = markPaidSchema.safeParse({
+    visitId: formData.get("visitId"),
+    method: formData.get("method"),
+    paidAt: formData.get("paidAt"),
+  });
+  if (!parsed.success) {
+    throw new Error("Некорректные данные оплаты");
+  }
+  const { visitId, method } = parsed.data;
+  const paidAt = parsed.data.paidAt ?? new Date();
+  if (Number.isNaN(paidAt.getTime())) {
+    throw new Error("Некорректная дата оплаты");
+  }
+
+  const visit = await loadVisitOrThrow(visitId);
+  if (visit.status !== "completed") {
+    redirect(
+      `/service/visits/${visitId}?error=${encodeURIComponent("Отметить оплату можно только после завершения визита")}`,
+    );
+  }
+  if (visit.paymentStatus === "paid") {
+    redirect(
+      `/service/visits/${visitId}?error=${encodeURIComponent("Счёт уже отмечен оплаченным")}`,
+    );
+  }
+
+  await prisma.visit.update({
+    where: { id: visitId },
+    data: { paymentStatus: "paid", paidAt, paymentMethod: method },
+  });
+
+  await logActivity({
+    actorId: actor.id,
+    action: "visit.payment.marked",
+    entityType: "Visit",
+    entityId: visitId,
+    diff: {
+      method,
+      paidAt: paidAt.toISOString(),
+      totalAmount: visit.totalAmount ? visit.totalAmount.toString() : null,
+    },
+  });
+
+  // Push клиенту об оплате (использует существующий тип; если его нет — ловим в каталоге)
+  const pool = await prisma.visit.findUnique({
+    where: { id: visitId },
+    select: { pool: { select: { customer: { select: { id: true } } } } },
+  });
+  if (pool) {
+    const userId = await getCustomerUserId(pool.pool.customer.id);
+    if (userId) {
+      await enqueuePush("visit_payment_marked", [{ userId }], {
+        visitId,
+        method,
+      });
+    }
+  }
+
+  revalidatePath(`/service/visits/${visitId}`);
+  revalidatePath(`/admin/visits/${visitId}`);
+  revalidatePath(`/client/visits/${visitId}`);
+  revalidatePath(`/admin/registry/customers`);
+  redirect(`/service/visits/${visitId}?ok=${encodeURIComponent("Оплата отмечена")}`);
 }
