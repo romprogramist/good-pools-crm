@@ -1,10 +1,12 @@
-self.addEventListener("install", () => self.skipWaiting());
-self.addEventListener("activate", (e) => e.waitUntil(self.clients.claim()));
+self.addEventListener("install", () => { console.log("[SW] install"); self.skipWaiting(); });
+self.addEventListener("activate", (e) => { console.log("[SW] activate"); e.waitUntil(self.clients.claim()); });
 
 self.addEventListener("push", (event) => {
-  if (!event.data) return;
+  console.log("[SW] push event received, hasData=", !!event.data);
+  if (!event.data) { console.warn("[SW] no data, abort"); return; }
   let payload;
-  try { payload = event.data.json(); } catch { return; }
+  try { payload = event.data.json(); console.log("[SW] payload=", payload); }
+  catch (e) { console.error("[SW] JSON parse failed", e); return; }
   const options = {
     body: payload.body,
     icon: payload.icon ?? "/icon-192.png",
@@ -13,10 +15,15 @@ self.addEventListener("push", (event) => {
     data: { url: payload.url },
     requireInteraction: false,
   };
-  event.waitUntil(self.registration.showNotification(payload.title, options));
+  event.waitUntil(
+    self.registration.showNotification(payload.title, options)
+      .then(() => console.log("[SW] showNotification OK"))
+      .catch((err) => console.error("[SW] showNotification failed", err))
+  );
 });
 
 self.addEventListener("notificationclick", (event) => {
+  console.log("[SW] notificationclick");
   event.notification.close();
   const url = event.notification.data?.url ?? "/";
   event.waitUntil((async () => {

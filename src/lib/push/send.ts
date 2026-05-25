@@ -18,6 +18,7 @@ export async function sendPush(userId: string, payload: PushPayload): Promise<nu
   }
 
   const subs = await prisma.pushSubscription.findMany({ where: { userId } });
+  console.log("[push] sendPush start", { userId, subs: subs.length, kind: payload.tag ?? "?" });
   if (subs.length === 0) return 0;
 
   const json = JSON.stringify(payload);
@@ -26,12 +27,15 @@ export async function sendPush(userId: string, payload: PushPayload): Promise<nu
 
   await Promise.all(
     subs.map(async (s) => {
+      const host = (() => { try { return new URL(s.endpoint).host; } catch { return "?"; } })();
+      const t0 = Date.now();
       try {
-        await webpush.sendNotification(
+        const result = await webpush.sendNotification(
           { endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } },
           json,
           { TTL: PUSH_TTL_SECONDS },
         );
+        console.log("[push] OK", { host, status: result.statusCode, ms: Date.now() - t0 });
         delivered += 1;
         try {
           await prisma.pushSubscription.update({
@@ -43,10 +47,11 @@ export async function sendPush(userId: string, payload: PushPayload): Promise<nu
         }
       } catch (err: unknown) {
         if (err instanceof WebPushError && (err.statusCode === 404 || err.statusCode === 410)) {
+          console.log("[push] DEAD", { host, status: err.statusCode, ms: Date.now() - t0 });
           deadEndpoints.push(s.endpoint);
         } else {
           const status = err instanceof WebPushError ? err.statusCode : undefined;
-          console.error("[push] sendNotification failed", { endpoint: s.endpoint, status, err });
+          console.error("[push] FAIL", { host, status, ms: Date.now() - t0, err });
         }
       }
     }),
