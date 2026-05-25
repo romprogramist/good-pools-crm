@@ -67,7 +67,7 @@ export async function createVisitSeriesAction(formData: FormData) {
     parsed.data.occurrences,
   );
 
-  const series = await prisma.$transaction(async (tx) => {
+  const seriesResult = await prisma.$transaction(async (tx) => {
     const s = await tx.visitSeries.create({
       data: {
         poolId: parsed.data.poolId,
@@ -91,8 +91,15 @@ export async function createVisitSeriesAction(formData: FormData) {
         notes: parsed.data.notes || null,
       })),
     });
-    return s;
+    const firstVisit = await tx.visit.findFirst({
+      where: { seriesId: s.id },
+      orderBy: { scheduledAt: "asc" },
+      select: { id: true },
+    });
+    return { series: s, firstVisitId: firstVisit?.id ?? null };
   });
+
+  const { series, firstVisitId } = seriesResult;
 
   await logActivity({
     actorId: actor.id,
@@ -114,7 +121,7 @@ export async function createVisitSeriesAction(formData: FormData) {
   await enqueuePush(
     "visit_assigned",
     [{ userId: series.serviceUserId }],
-    { seriesId: series.id, count: series.occurrences, summary },
+    { visitId: firstVisitId, seriesId: series.id, count: series.occurrences, summary },
   );
 
   revalidatePath("/service/calendar");

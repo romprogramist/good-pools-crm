@@ -17,8 +17,10 @@ export type PushKind =
   | "equipment_warranty_expiring"
   | "equipment_regulation_due";
 
-function s(v: unknown, fallback = ""): string {
-  return typeof v === "string" ? v : fallback;
+function str(v: unknown, fallback = ""): string {
+  if (typeof v === "string") return v;
+  if (typeof v === "number" || typeof v === "bigint") return String(v);
+  return fallback;
 }
 
 function buildPayload(kind: PushKind, raw: Record<string, unknown>): PushPayload {
@@ -26,65 +28,65 @@ function buildPayload(kind: PushKind, raw: Record<string, unknown>): PushPayload
     case "new_online_request":
       return {
         title: "Новая заявка",
-        body: s(raw.preview, "Клиент записался на сервис"),
-        url: `/service/online-requests/${s(raw.requestId)}`,
-        tag: `req-${s(raw.requestId)}`,
+        body: str(raw.preview, "Клиент записался на сервис"),
+        url: `/service/online-requests/${str(raw.requestId)}`,
+        tag: `req-${str(raw.requestId)}`,
       };
     case "request_accepted":
       return {
         title: "Заявка принята",
-        body: `Визит ${s(raw.dateLabel, "назначен")}`,
+        body: `Визит ${str(raw.dateLabel, "назначен")}`,
         url: `/client/requests`,
-        tag: `req-${s(raw.requestId)}`,
+        tag: `req-${str(raw.requestId)}`,
       };
     case "request_declined":
       return {
         title: "Заявка отклонена",
-        body: s(raw.reason, "Сервисник отклонил заявку"),
+        body: str(raw.reason, "Сервисник отклонил заявку"),
         url: `/client/requests`,
-        tag: `req-${s(raw.requestId)}`,
+        tag: `req-${str(raw.requestId)}`,
       };
     case "visit_assigned":
       return {
         title: "Назначен визит",
-        body: s(raw.summary, "Новый визит в календаре"),
-        url: `/service/visits/${s(raw.visitId)}`,
-        tag: `visit-${s(raw.visitId)}`,
+        body: str(raw.summary, "Новый визит в календаре"),
+        url: `/service/visits/${str(raw.visitId)}`,
+        tag: `visit-${str(raw.visitId)}`,
       };
     case "visit_report_ready":
       return {
         title: "Отчёт готов",
-        body: `Сумма к оплате: ${s(raw.totalLabel, "—")}`,
-        url: `/client/visits/${s(raw.visitId)}`,
-        tag: `report-${s(raw.visitId)}`,
+        body: `Сумма к оплате: ${str(raw.totalLabel, "—")}`,
+        url: `/client/visits/${str(raw.visitId)}`,
+        tag: `report-${str(raw.visitId)}`,
       };
     case "visit_report_updated":
       return {
         title: "Отчёт обновлён",
-        body: s(raw.summary, "Сервисник обновил отчёт"),
-        url: `/client/visits/${s(raw.visitId)}`,
-        tag: `report-${s(raw.visitId)}`,
+        body: str(raw.summary, "Сервисник обновил отчёт"),
+        url: `/client/visits/${str(raw.visitId)}`,
+        tag: `report-${str(raw.visitId)}`,
       };
     case "new_chat_message":
       return {
         title: "Новое сообщение",
-        body: s(raw.preview, "Сообщение в поддержке"),
-        url: `/${s(raw.scope, "client")}/support/${s(raw.threadId)}`,
-        tag: `chat-${s(raw.threadId)}`,
+        body: str(raw.preview, "Сообщение в поддержке"),
+        url: `/${str(raw.scope, "client")}/support/${str(raw.threadId)}`,
+        tag: `chat-${str(raw.threadId)}`,
       };
     case "equipment_warranty_expiring":
       return {
         title: "Заканчивается гарантия",
-        body: `${s(raw.title, "Оборудование")} — ${s(raw.daysLeft, "14")} дн.`,
-        url: s(raw.url, "/"),
-        tag: `warranty-${s(raw.equipmentId)}`,
+        body: `${str(raw.title, "Оборудование")} — ${str(raw.daysLeft, "14")} дн.`,
+        url: str(raw.url, "/"),
+        tag: `warranty-${str(raw.equipmentId)}`,
       };
     case "equipment_regulation_due":
       return {
         title: "Скоро регламент",
-        body: `${s(raw.title, "Оборудование")} — через ${s(raw.daysLeft, "7")} дн.`,
-        url: s(raw.url, "/"),
-        tag: `regulation-${s(raw.equipmentId)}`,
+        body: `${str(raw.title, "Оборудование")} — через ${str(raw.daysLeft, "7")} дн.`,
+        url: str(raw.url, "/"),
+        tag: `regulation-${str(raw.equipmentId)}`,
       };
   }
 }
