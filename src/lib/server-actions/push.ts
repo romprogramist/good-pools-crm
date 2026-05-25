@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { logActivity } from "@/lib/activity";
 import { sendPush } from "@/lib/push/send";
 
 export async function unsubscribeDeviceAction(endpoint: string): Promise<void> {
@@ -13,13 +14,11 @@ export async function unsubscribeDeviceAction(endpoint: string): Promise<void> {
     where: { endpoint, userId: session.user.id },
   });
   if (result.count > 0) {
-    await prisma.activityLog.create({
-      data: {
-        actorId: session.user.id,
-        action: "push.subscription.removed",
-        entityType: "PushSubscription",
-        entityId: endpoint.slice(0, 100),
-      },
+    await logActivity({
+      actorId: session.user.id,
+      action: "push.subscription.removed",
+      entityType: "PushSubscription",
+      entityId: endpoint.slice(0, 100),
     });
   }
   revalidatePath("/settings");
@@ -35,13 +34,12 @@ export async function sendTestPushAction(): Promise<{ sentTo: number }> {
     url: "/settings",
     tag: "test",
   });
-  await prisma.activityLog.create({
-    data: {
-      actorId: session.user.id,
-      action: "push.test_sent",
-      entityType: "User",
-      entityId: session.user.id,
-    },
+  await logActivity({
+    actorId: session.user.id,
+    action: "push.test_sent",
+    entityType: "User",
+    entityId: session.user.id,
+    diff: { sentTo },
   });
   return { sentTo };
 }
