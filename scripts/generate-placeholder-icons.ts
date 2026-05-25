@@ -15,4 +15,4 @@ async function make(path: string, size: number) {
 (async () => {
   await make("public/icon-192.png", 192);
   await make("public/badge-72.png", 72);
-})();
+})().catch((err) => { console.error(err); process.exit(1); });

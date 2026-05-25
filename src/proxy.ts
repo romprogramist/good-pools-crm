@@ -1,8 +1,8 @@
 import { auth } from "@/lib/auth";
 import { NextResponse } from "next/server";
 
-const PUBLIC_PATHS = ["/", "/login", "/setup", "/setup-password", "/sw.js"];
-const PUBLIC_PREFIXES = ["/api/auth", "/api/setup", "/_next", "/favicon", "/icon-", "/badge-"];
+const PUBLIC_PATHS = ["/", "/login", "/setup", "/setup-password", "/sw.js", "/icon-192.png", "/badge-72.png"];
+const PUBLIC_PREFIXES = ["/api/auth", "/api/setup", "/_next", "/favicon"];
 
 function isPublic(pathname: string) {
   if (PUBLIC_PATHS.includes(pathname)) return true;
