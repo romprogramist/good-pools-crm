@@ -1,5 +1,8 @@
 import { prisma } from "@/lib/prisma";
-import { webpush, pushConfigured } from "./web-push";
+import webpush, { WebPushError } from "web-push";
+import { pushConfigured } from "./web-push";
+
+const PUSH_TTL_SECONDS = 60 * 60 * 24; // push services retain the notification up to 24h if device is offline
 
 export type PushPayload = {
   title: string;
@@ -27,18 +30,22 @@ export async function sendPush(userId: string, payload: PushPayload): Promise<nu
         await webpush.sendNotification(
           { endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } },
           json,
-          { TTL: 60 * 60 * 24 },
+          { TTL: PUSH_TTL_SECONDS },
         );
-        await prisma.pushSubscription.update({
-          where: { id: s.id },
-          data: { lastUsedAt: new Date() },
-        });
         delivered += 1;
+        try {
+          await prisma.pushSubscription.update({
+            where: { id: s.id },
+            data: { lastUsedAt: new Date() },
+          });
+        } catch (err) {
+          console.error("[push] lastUsedAt update failed", { endpoint: s.endpoint, err });
+        }
       } catch (err: unknown) {
-        const status = (err as { statusCode?: number })?.statusCode;
-        if (status === 404 || status === 410) {
+        if (err instanceof WebPushError && (err.statusCode === 404 || err.statusCode === 410)) {
           deadEndpoints.push(s.endpoint);
         } else {
+          const status = err instanceof WebPushError ? err.statusCode : undefined;
           console.error("[push] sendNotification failed", { endpoint: s.endpoint, status, err });
         }
       }
