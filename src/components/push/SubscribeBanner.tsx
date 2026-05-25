@@ -31,7 +31,7 @@ export function SubscribeBanner() {
       if (Notification.permission === "granted") {
         // Active subscription for this endpoint?
         try {
-          const reg = await navigator.serviceWorker.getRegistration("/sw.js");
+          const reg = await navigator.serviceWorker.getRegistration("/");
           const sub = await reg?.pushManager.getSubscription();
           if (cancelled) return;
           if (sub) { setState("hidden"); return; }

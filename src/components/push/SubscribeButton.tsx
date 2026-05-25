@@ -23,7 +23,7 @@ export function SubscribeButton({ onSubscribed, className, label = "Разреш
     if (!PUBLIC_KEY) { setError("VAPID-ключ не настроен"); return; }
 
     try {
-      const reg = await navigator.serviceWorker.register("/sw.js");
+      const reg = await navigator.serviceWorker.register("/serwist/sw.js", { scope: "/" });
       const permission = await Notification.requestPermission();
       if (permission !== "granted") {
         setError(permission === "denied" ? "Разрешение заблокировано в браузере" : "Разрешение не выдано");
