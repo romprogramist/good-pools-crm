@@ -10,7 +10,7 @@ import {
   enqueuePush,
   getCustomerUserId,
   listAdminAndServiceRecipients,
-} from "@/lib/push/stub";
+} from "@/lib/push/enqueue";
 import { hasUnpaidDebt } from "@/lib/payments/debt";
 
 async function requireSession() {
@@ -221,13 +221,15 @@ export async function acceptOnlineRequestAction(formData: FormData) {
 
   const clientUserId = await getCustomerUserId(result.request.customerId);
   if (clientUserId) {
+    const dateLabel = new Date(result.visit.scheduledAt).toLocaleString("ru-RU", {
+      day: "numeric", month: "long", hour: "2-digit", minute: "2-digit",
+    });
     await enqueuePush(
       "request_accepted",
       [{ userId: clientUserId }],
       {
         requestId: result.request.id,
-        visitId: result.visit.id,
-        scheduledAt: result.visit.scheduledAt.toISOString(),
+        dateLabel,
       },
     );
   }

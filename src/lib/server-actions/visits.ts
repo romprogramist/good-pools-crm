@@ -7,7 +7,7 @@ import type { VisitStatus } from "@prisma/client";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { logActivity } from "@/lib/activity";
-import { enqueuePush } from "@/lib/push/stub";
+import { enqueuePush } from "@/lib/push/enqueue";
 
 async function requireServicer() {
   const session = await auth();
@@ -117,6 +117,9 @@ export async function createVisitAction(formData: FormData) {
       kind: "manual",
       notes: parsed.data.notes || null,
     },
+    include: {
+      pool: { select: { name: true, customer: { select: { fullName: true } } } },
+    },
   });
 
   await logActivity({
@@ -133,10 +136,13 @@ export async function createVisitAction(formData: FormData) {
     },
   });
 
+  const summary = `${new Date(visit.scheduledAt).toLocaleString("ru-RU", {
+    day: "numeric", month: "long", hour: "2-digit", minute: "2-digit",
+  })} — ${visit.pool.customer.fullName}, ${visit.pool.name}`;
   await enqueuePush(
     "visit_assigned",
     [{ userId: visit.serviceUserId }],
-    { visitId: visit.id, scheduledAt: visit.scheduledAt.toISOString() },
+    { visitId: visit.id, summary },
   );
 
   revalidatePath("/service/calendar");

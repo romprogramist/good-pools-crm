@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { saveChatPhotos } from "@/lib/chat";
-import { enqueuePush, listAdminAndServiceRecipients } from "@/lib/push/stub";
+import { enqueuePush, listAdminAndServiceRecipients } from "@/lib/push/enqueue";
 
 export async function sendChatMessageAction(
   formData: FormData,
@@ -58,12 +58,12 @@ export async function sendChatMessageAction(
   const preview = body.slice(0, 80);
   if (isClient) {
     const recipients = await listAdminAndServiceRecipients();
-    await enqueuePush("new_chat_message", recipients, { threadId, preview });
+    await enqueuePush("new_chat_message", recipients, { threadId, preview, scope: "service" });
   } else {
     await enqueuePush(
       "new_chat_message",
       [{ userId: thread.customer.userId }],
-      { threadId, preview },
+      { threadId, preview, scope: "client" },
     );
   }
 

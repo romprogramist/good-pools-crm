@@ -12,7 +12,7 @@ import type { ChecklistQuestionType } from "@prisma/client";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { logActivity } from "@/lib/activity";
-import { enqueuePush, getCustomerUserId } from "@/lib/push/stub";
+import { enqueuePush, getCustomerUserId } from "@/lib/push/enqueue";
 import { checkVisitCanComplete } from "@/lib/visit/validation";
 import { encodeChecklistValue, type ChecklistAnswerInput } from "@/lib/visit/checklist-value";
 import { generateVisitPdf } from "@/lib/pdf/generate-visit-pdf";
@@ -677,15 +677,20 @@ export async function completeVisitAction(visitId: string): Promise<void> {
   // Push клиенту
   const visitWithPool = await prisma.visit.findUnique({
     where: { id: visitId },
-    select: { pool: { select: { customer: { select: { id: true } } } } },
+    select: {
+      scheduledAt: true,
+      pool: { select: { name: true, customer: { select: { id: true } } } },
+    },
   });
   if (visitWithPool) {
     const userId = await getCustomerUserId(visitWithPool.pool.customer.id);
     if (userId) {
+      const totalLabel = `${finalTotal} ₽`;
+      const summary = `${new Date(visitWithPool.scheduledAt).toLocaleDateString("ru-RU")} — ${visitWithPool.pool.name}`;
       await enqueuePush(
         wasCompletedBefore ? "visit_report_updated" : "visit_report_ready",
         [{ userId }],
-        { visitId },
+        { visitId, totalLabel, summary },
       );
     }
   }

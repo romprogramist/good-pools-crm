@@ -6,7 +6,7 @@ import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { logActivity } from "@/lib/activity";
-import { enqueuePush } from "@/lib/push/stub";
+import { enqueuePush } from "@/lib/push/enqueue";
 import { generateOccurrenceDates } from "@/lib/calendar/dates";
 
 async function requireServicer() {
@@ -47,7 +47,10 @@ export async function createVisitSeriesAction(formData: FormData) {
     redirect(`/service/calendar?error=${encodeURIComponent(msg)}`);
   }
 
-  const pool = await prisma.pool.findUnique({ where: { id: parsed.data.poolId } });
+  const pool = await prisma.pool.findUnique({
+    where: { id: parsed.data.poolId },
+    include: { customer: { select: { fullName: true } } },
+  });
   if (!pool) {
     redirect(`/service/calendar?error=${encodeURIComponent("Бассейн не найден")}`);
   }
@@ -105,10 +108,13 @@ export async function createVisitSeriesAction(formData: FormData) {
     },
   });
 
+  const summary = `${new Date(series.startAt).toLocaleString("ru-RU", {
+    day: "numeric", month: "long", hour: "2-digit", minute: "2-digit",
+  })} — ${pool.customer.fullName}, ${pool.name}`;
   await enqueuePush(
     "visit_assigned",
     [{ userId: series.serviceUserId }],
-    { seriesId: series.id, count: series.occurrences },
+    { seriesId: series.id, count: series.occurrences, summary },
   );
 
   revalidatePath("/service/calendar");
