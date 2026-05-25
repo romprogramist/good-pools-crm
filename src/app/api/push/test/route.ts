@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { sendPush } from "@/lib/push/send";
@@ -20,6 +21,7 @@ export async function POST() {
       action: "push.test_sent",
       entityType: "User",
       entityId: session.user.id,
+      diff: { sentTo } as Prisma.InputJsonValue,
     },
   });
 

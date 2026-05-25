@@ -9,7 +9,13 @@ export async function POST(req: NextRequest) {
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
-  const parsed = Body.safeParse(await req.json());
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "bad_request" }, { status: 400 });
+  }
+  const parsed = Body.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: "bad_request" }, { status: 400 });
 
   const result = await prisma.pushSubscription.deleteMany({
