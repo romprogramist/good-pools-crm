@@ -234,13 +234,20 @@
 
 ## Этап 14. PWA
 
-- [ ] Установить Serwist
-- [ ] `manifest.webmanifest` с иконками и названием «Хорошие Бассейны CRM»
-- [ ] Иконки 192x192 и 512x512 (логотип компании)
-- [ ] Service worker регистрируется автоматически
-- [ ] Offline-fallback страница
-- [ ] iOS: meta-теги для «Add to Home Screen»
-- [ ] Splash-screen для iOS
+- [x] Установить Serwist (9.5.11 + @serwist/next + @serwist/turbopack)
+- [x] `manifest.webmanifest` с иконками и названием «Хорошие Бассейны CRM» (`src/app/manifest.ts`, теал-тема)
+- [x] Иконки 192x192 и 512x512 (логотип компании) — `scripts/generate-pwa-icons.ts` рендерит SVG-лесенку из Header.tsx; добавлен `icon-512-maskable.png` для Android adaptive
+- [x] Service worker регистрируется автоматически — `PwaRegister` в `layout.tsx` + дублирующая регистрация в `SubscribeButton` для push
+- [x] Offline-fallback страница — статический `public/offline.html`, отдаётся через `setCatchHandler` для `request.destination === "document"`
+- [x] iOS: meta-теги для «Add to Home Screen» — через `metadata.appleWebApp` и `metadata.icons.apple` в `layout.tsx`
+- [x] Splash-screen для iOS — *метаданные через `appleWebApp` дают iOS дефолтный белый splash с иконкой (background_color #ffffff из манифеста). Полный комплект `apple-touch-startup-image` под 12+ размеров — отложено, добавим если клиент попросит. См. spec §iOS Add-to-Home.*
+
+**Технические особенности интеграции:**
+- SW отдаётся по URL `/serwist/sw.js` (роут-хэндлер `src/app/serwist/[path]/route.ts` из `@serwist/turbopack`), scope расширен до `/` через `Service-Worker-Allowed: /` header.
+- Push-обработчики этапа 12 перенесены 1-в-1 в `src/app/sw.ts` (рядом с Serwist precache); старый `public/sw.js` удалён.
+- `src/proxy.ts`: `/serwist/` добавлен в `PUBLIC_PREFIXES`, плюс `/offline.html` и `/manifest.webmanifest` в `PUBLIC_PATHS`.
+
+**Спецификация:** `docs/superpowers/specs/2026-05-25-stage-14-pwa-design.md`. План: `docs/superpowers/plans/2026-05-25-stage-14-pwa.md`.
 
 **Чекпойнт:** Юзер открывает CRM на iPhone в Safari → «Поделиться» → «На экран Домой» → иконка появляется → запуск открывает приложение в полноэкранном режиме без браузерной шапки.
 
@@ -334,4 +341,4 @@
 3. Скажи Claude: «Продолжаем CRM с этапа N».
 4. Claude прочитает `spec.md` + `plan.md` и поймёт контекст.
 
-**Текущий статус (2026-05-25):** этап 8 принят клиентом (2026-05-11). Этапы 9-11 реализованы, ждут чекпойнтов. Этап 12 реализован: код подтверждён end-to-end через диагностические логи; визуальная проверка popup'ов на тестовой машине заблокирована Win-настройками (не код). Этап 13 реализован, ждёт чекпойнта. Этапы 14-17 — pending.
+**Текущий статус (2026-05-25):** этап 8 принят клиентом (2026-05-11). Этапы 9-11 реализованы, ждут чекпойнтов. Этап 12 реализован: код подтверждён end-to-end через диагностические логи; визуальная проверка popup'ов на тестовой машине заблокирована Win-настройками (не код). Этап 13 реализован, ждёт чекпойнта. Этап 14 реализован, ждёт чекпойнта (нужна ручная проверка install/offline в DevTools + Add-to-Home на iPhone). Этапы 15-17 — pending.
