@@ -10,7 +10,7 @@
     "db:seed:checklist": "tsx prisma/seeds/checklist.ts",
     "db:seed:chemistry": "tsx prisma/seeds/chemistry.ts",
     "vapid:generate": "tsx scripts/generate-vapid.ts",
-    "icons:placeholders": "tsx scripts/generate-placeholder-icons.ts"
+    "icons:pwa": "tsx scripts/generate-pwa-icons.ts"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.2",
