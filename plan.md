@@ -297,9 +297,9 @@
 Финальное код-ревью этапа 12 (2026-05-25) отметило 5 пунктов мелочи. Все некритичные, но желательно сделать перед стартом этапа 13.
 
 - [ ] **Сломанные URL у пушей** — в `src/lib/push/enqueue.ts` `buildPayload`:
-  - `new_online_request` → `/service/online-requests/${requestId}` (нет такой страницы) → заменить на `/service/online-requests?tab=pending` или создать `/service/online-requests/[id]/page.tsx`.
-  - `new_chat_message` со `scope: "client"` → `/client/support/${threadId}` (у клиента только глобальный тред) → заменить на `/client/support`.
-  - `equipment_warranty_expiring` / `equipment_regulation_due` для клиента → `/client/customers/${customerId}/pools/${poolId}` (роут не существует) → заменить на `/client/visits` или `/client` до появления клиентского представления карточки.
+  - [x] `new_online_request` → `/service/online-requests/${requestId}` (нет такой страницы) → заменено на `/service/online-requests?tab=pending` (коммит вместе с поджатием 2026-05-25).
+  - [ ] `new_chat_message` со `scope: "client"` → `/client/support/${threadId}` (у клиента только глобальный тред) → заменить на `/client/support`.
+  - [ ] `equipment_warranty_expiring` / `equipment_regulation_due` для клиента → `/client/customers/${customerId}/pools/${poolId}` (роут не существует) → заменить на `/client/visits` или `/client` до появления клиентского представления карточки.
 - [ ] **Удалить неиспользуемые API-роуты** `src/app/api/push/unsubscribe/route.ts` и `src/app/api/push/test/route.ts` — дублируют `unsubscribeDeviceAction` и `sendTestPushAction`, никто их не вызывает.
 - [ ] **Перенести импорт в `src/lib/server-actions/push.ts`** — `import { sendRegulationReminder }` в середине файла (между функциями) → переместить в шапку к остальным импортам.
 - [ ] **Гейтировать диагностические логи** `[push]` (в `src/lib/push/send.ts`) через `process.env.DEBUG_PUSH === "1"` — сейчас лог пишется на каждую отправку; в проде с cron-задачами этапа 15 это будет шумно.

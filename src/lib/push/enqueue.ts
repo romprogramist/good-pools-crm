@@ -30,7 +30,7 @@ function buildPayload(kind: PushKind, raw: Record<string, unknown>): PushPayload
       return {
         title: "Новая заявка",
         body: str(raw.preview, "Клиент записался на сервис"),
-        url: `/service/online-requests/${str(raw.requestId)}`,
+        url: `/service/online-requests?tab=pending`,
         tag: `req-${str(raw.requestId)}`,
       };
     case "request_accepted":
