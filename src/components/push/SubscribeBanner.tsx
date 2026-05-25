@@ -18,26 +18,29 @@ export function SubscribeBanner() {
   const [state, setState] = useState<State>("loading");
 
   useEffect(() => {
+    let cancelled = false;
     (async () => {
-      if (!isPushSupported()) { setState("hidden"); return; }
-      if (isIosWithoutPwa()) { setState("ios-needs-pwa"); return; }
+      if (!isPushSupported()) { if (!cancelled) setState("hidden"); return; }
+      if (isIosWithoutPwa()) { if (!cancelled) setState("ios-needs-pwa"); return; }
 
       const dismissedUntil = Number(localStorage.getItem(DISMISS_KEY) ?? 0);
-      if (Date.now() < dismissedUntil) { setState("hidden"); return; }
+      if (Date.now() < dismissedUntil) { if (!cancelled) setState("hidden"); return; }
 
-      if (Notification.permission === "denied") { setState("denied"); return; }
+      if (Notification.permission === "denied") { if (!cancelled) setState("denied"); return; }
 
       if (Notification.permission === "granted") {
         // Active subscription for this endpoint?
         try {
           const reg = await navigator.serviceWorker.getRegistration("/sw.js");
           const sub = await reg?.pushManager.getSubscription();
+          if (cancelled) return;
           if (sub) { setState("hidden"); return; }
         } catch { /* fallthrough */ }
       }
 
-      setState("ask");
+      if (!cancelled) setState("ask");
     })();
+    return () => { cancelled = true; };
   }, []);
 
   function dismiss() {
