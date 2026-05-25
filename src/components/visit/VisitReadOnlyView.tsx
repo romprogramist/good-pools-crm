@@ -134,17 +134,6 @@ export function VisitReadOnlyView({ visit }: { visit: VisitForReadOnly }) {
         </Card>
       )}
 
-      <Card>
-        <div className="flex items-center justify-between text-base">
-          <span className="text-zinc-600">ИТОГО К ОПЛАТЕ:</span>
-          <span className="text-xl font-bold">
-            {visit.totalAmount ? `${Number(visit.totalAmount).toLocaleString("ru-RU")} ₽` : "—"}
-          </span>
-        </div>
-        <p className="mt-2 text-sm text-zinc-500">
-          Статус оплаты: Не оплачен (онлайн-оплата подключается на этапе 13).
-        </p>
-      </Card>
     </div>
   );
 }
