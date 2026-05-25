@@ -5,6 +5,7 @@ import { PageContainer, PageHeader, Card } from "@/components/Page";
 import { UpcomingEquipmentWidget } from "@/components/service/UpcomingEquipmentWidget";
 import { UpcomingVisitsWidget } from "@/components/service/UpcomingVisitsWidget";
 import { prisma } from "@/lib/prisma";
+import { SubscribeBanner } from "@/components/push/SubscribeBanner";
 
 const SECTIONS: { href: string; title: string; description: string; icon: React.ReactNode }[] = [
   {
@@ -67,6 +68,8 @@ export default async function ServiceHome() {
           title={`Привет, ${session?.user.name ?? ""}`}
           subtitle="Кабинет сервисника"
         />
+
+        <SubscribeBanner />
 
         <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {SECTIONS.map((s) => (

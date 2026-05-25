@@ -5,6 +5,7 @@ import { Header } from "@/components/Header";
 import { PageContainer, PageHeader, Card } from "@/components/Page";
 import { prisma } from "@/lib/prisma";
 import { formatMoscow } from "@/lib/calendar/dates";
+import { SubscribeBanner } from "@/components/push/SubscribeBanner";
 
 const SECTIONS: { href: string; title: string; description: string; icon: React.ReactNode }[] = [
   {
@@ -91,6 +92,8 @@ export default async function ClientHome() {
           title={`Здравствуйте, ${session.user.name ?? ""}`}
           subtitle="Личный кабинет клиента «Хорошие Бассейны»"
         />
+
+        <SubscribeBanner />
 
         <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
           {SECTIONS.map((s) => (

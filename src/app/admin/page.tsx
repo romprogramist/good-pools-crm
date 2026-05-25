@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { Header } from "@/components/Header";
 import { PageContainer, PageHeader, Card } from "@/components/Page";
+import { SubscribeBanner } from "@/components/push/SubscribeBanner";
 
 const SECTIONS = [
   {
@@ -116,6 +117,8 @@ export default async function AdminHome() {
           title={`Привет, ${session?.user.name ?? ""}`}
           subtitle="Админ-панель CRM «Хорошие Бассейны»"
         />
+
+        <SubscribeBanner />
 
         <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {SECTIONS.map((s) => (
