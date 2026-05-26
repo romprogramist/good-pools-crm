@@ -3,6 +3,9 @@ import { Header } from "@/components/Header";
 import { isSetupComplete } from "@/lib/setup";
 import { auth } from "@/lib/auth";
 
+// Страница дёргает БД (isSetupComplete + auth) — рендерим on demand, не prerender.
+export const dynamic = "force-dynamic";
+
 export default async function Home() {
   if (!(await isSetupComplete())) {
     redirect("/setup");

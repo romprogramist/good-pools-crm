@@ -6,6 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PageContainer, Card, FormField } from "@/components/Page";
 
+// Страница дёргает isSetupComplete (Prisma) — рендерим on demand, не prerender.
+export const dynamic = "force-dynamic";
+
 export default async function SetupPage() {
   if (await isSetupComplete()) notFound();
 
