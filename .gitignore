@@ -32,6 +32,7 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.production.example
 
 # vercel
 .vercel
@@ -53,3 +54,6 @@ next-env.d.ts
 /.superpowers
 
 dev.log
+
+# Build artifacts (bundled seed-скрипт собирается в Docker builder-стадии)
+/prisma/seeds/*.cjs

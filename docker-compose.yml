@@ -1,0 +1,38 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: gpcrm-app:latest
+    container_name: gpcrm-app
+    restart: unless-stopped
+    env_file: .env.production
+    ports:
+      - "127.0.0.1:3010:3000"
+    volumes:
+      - ./uploads:/app/uploads
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - gpcrm_net
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    image: gpcrm-worker:latest
+    container_name: gpcrm-worker
+    restart: unless-stopped
+    env_file: .env.production
+    volumes:
+      - ./uploads:/app/uploads
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - app
+    networks:
+      - gpcrm_net
+
+networks:
+  gpcrm_net:
+    name: gpcrm_net

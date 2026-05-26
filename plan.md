@@ -273,19 +273,33 @@
 
 ---
 
-## Этап 16. Деплой на боевой сервер
+## Этап 16. Деплой на тестовый домен
 
-- [ ] Dockerfile для Next.js (multi-stage, standalone output)
-- [ ] Dockerfile для worker
-- [ ] `docker-compose.yml`: postgres + app + worker + nginx
-- [ ] `nginx.conf` с reverse-proxy на app, отдача `/uploads/` через защищённый роут (не напрямую)
-- [ ] LetsEncrypt через `certbot` или `nginx-certbot` контейнер
-- [ ] `.env.production` шаблон
-- [ ] Скрипт деплоя `deploy.sh` (git pull + docker compose up -d --build)
-- [ ] Скрипт бэкапа `backup-db.sh` + cron на сервере (ежедневно в 02:00, ротация 30 дней)
-- [ ] Документация `DEPLOY.md` с инструкциями для системника клиента
+Тестовый домен: `https://gpcrm.95-163-236-186.nip.io` (nip.io = бесплатный авто-резолв в IP).
+Сервер мультипроектный (~15 чужих проектов), соседей не трогаем. Архитектурно адаптировано: nginx и postgres — хостовые, в compose только app+worker. Подробности — `docs/superpowers/specs/2026-05-26-stage-16-deploy-design.md`, реализация — `docs/superpowers/plans/2026-05-26-stage-16-deploy.md`.
 
-**Чекпойнт:** Открываем боевой URL компании в браузере → видим логин-страницу с HTTPS-сертификатом → логинимся как админ → всё работает как локально.
+### Часть A (локальная подготовка репо) — сделано
+
+- [x] Dockerfile для Next.js (multi-stage, standalone output, bundled seed через esbuild)
+- [x] Dockerfile для worker (node:22-alpine, tsx, TZ=Europe/Moscow)
+- [x] `docker-compose.yml`: app + worker, host postgres через `host.docker.internal`
+- [x] Версионированный nginx vhost в `deploy/nginx/gpcrm.95-163-236-186.nip.io.conf`
+- [x] `.env.production.example` шаблон
+- [x] `prisma/seeds/admin.ts` — идемпотентный seed первого админа
+- [x] Скрипт деплоя `deploy.sh` (git pull → build → migrate → seed → restart)
+- [x] Скрипт бэкапа `backup-db.sh` (pg_dump, ротация 30 дней)
+- [x] `DEPLOY.md` с инструкциями
+
+### Часть B (деплой на сервер) — впереди
+
+- [ ] Подготовка сервера: swap 4G, postgres БД+юзер, .pgpass
+- [ ] Клон репо, `.env.production` (генерация секретов и VAPID для нового домена)
+- [ ] Первичный билд + миграции + seed
+- [ ] Nginx vhost + Let's Encrypt
+- [ ] Бэкап cron
+- [ ] Чекпойнт: HTTPS, логин, push от реального cron, iOS/Android Add to Home Screen
+
+**Чекпойнт:** Открываем `https://gpcrm.95-163-236-186.nip.io/` → логин-страница с HTTPS → логин админом → push приходит от прогона cron → PWA устанавливается на iOS Safari и Android Chrome. При успехе закрываются также: iOS PWA-чекпойнт этапа 14, уровень 2 этапа 15.
 
 ---
 
@@ -305,6 +319,20 @@
 ---
 
 ## Беклог (доработки вне нумерованных этапов)
+
+### Защищённая раздача uploads через X-Accel-Redirect — для боевого деплоя
+
+В исходном плане этапа 16 — «отдача `/uploads/` через защищённый роут». На тестовом домене (этап 16) реализовано в упрощённой форме: файлы лежат на хосте в `/home/roman/good-pools-crm/uploads/`, наружу nginx про них не знает, доступ только через Next.js (server-actions/route-handlers проверяют права). Этого достаточно, пока тестовый домен — но для боевого нужен X-Accel-Redirect для производительности.
+
+- [ ] Роут-обёртка `/api/uploads/[...path]` проверяет права → возвращает заголовок `X-Accel-Redirect: /internal-uploads/<path>`
+- [ ] В nginx-конфиге `location /internal-uploads/` с `internal;` директивой + `alias /home/roman/good-pools-crm/uploads/`
+- [ ] Заменить все прямые ссылки в UI/PDF на `/api/uploads/...`
+
+**Why:** Сейчас Next.js читает файл с диска и пушит через свой стрим — расход RAM и CPU. X-Accel-Redirect передаёт раздачу nginx (zero-copy sendfile), Next.js только проверяет права. Для тестового — overhead приемлемый, для боевого — нужен.
+
+**How to apply:** Микроэтап после фидбека заказчика по тестовому деплою, перед боевым доменом.
+
+---
 
 ### Полировка этапа 12 — до начала этапа 13
 

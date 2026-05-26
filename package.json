@@ -9,6 +9,7 @@
     "lint": "eslint",
     "db:seed:checklist": "tsx prisma/seeds/checklist.ts",
     "db:seed:chemistry": "tsx prisma/seeds/chemistry.ts",
+    "db:seed:admin": "tsx prisma/seeds/admin.ts",
     "vapid:generate": "tsx scripts/generate-vapid.ts",
     "icons:pwa": "tsx scripts/generate-pwa-icons.ts",
     "worker": "tsx worker/index.ts"
