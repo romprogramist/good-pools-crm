@@ -54,6 +54,3 @@ next-env.d.ts
 /.superpowers
 
 dev.log
-
-# Build artifacts (bundled seed-скрипт собирается в Docker builder-стадии)
-/prisma/seeds/*.cjs

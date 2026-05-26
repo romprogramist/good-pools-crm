@@ -1,26 +1,34 @@
 #!/usr/bin/env bash
 # Применение: на сервере `cd /home/roman/good-pools-crm && bash deploy.sh`.
-# Делает: git pull → docker build → prisma migrate deploy → seed:admin → restart.
+# Делает: git pull → docker build (worker, app, builder) → prisma migrate
+# → seed admin (через builder, у него полные node_modules с tsx и prisma CLI) → restart.
 set -euo pipefail
 
 cd "$(dirname "$0")"
 
-echo "==> [1/6] git pull"
+echo "==> [1/5] git pull"
 git pull --ff-only
 
-echo "==> [2/6] build worker (лёгкий, упадёт раньше — узнаем без долгого билда)"
+echo "==> [2/5] build worker + app + builder"
+# Сначала worker (лёгкий, упадёт раньше — узнаем без долгого билда)
 docker compose build worker
-
-echo "==> [3/6] build app (NODE_OPTIONS=--max-old-space-size=1536 зашит в Dockerfile)"
 docker compose build app
+# Builder-стадия — нужна для миграций и seed, у неё полные node_modules
+docker build --target builder -t gpcrm-builder . > /dev/null
 
-echo "==> [4/6] apply migrations"
-docker compose run --rm app npx prisma migrate deploy
+echo "==> [3/5] prisma migrate deploy (через builder)"
+docker run --rm \
+  --add-host=host.docker.internal:host-gateway \
+  --env-file .env.production \
+  gpcrm-builder npx prisma migrate deploy
 
-echo "==> [5/6] seed admin (idempotent, читает ADMIN_* из .env.production)"
-docker compose run --rm app node prisma/seeds/admin.cjs
+echo "==> [4/5] seed admin (idempotent, через builder)"
+docker run --rm \
+  --add-host=host.docker.internal:host-gateway \
+  --env-file .env.production \
+  gpcrm-builder npx tsx prisma/seeds/admin.ts
 
-echo "==> [6/6] restart services"
+echo "==> [5/5] restart services"
 docker compose up -d
 
 echo "==> done"

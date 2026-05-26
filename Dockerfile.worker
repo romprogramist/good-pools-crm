@@ -4,12 +4,15 @@ FROM node:22-alpine
 WORKDIR /app
 RUN apk add --no-cache libc6-compat openssl tini
 
-ENV NODE_ENV=production
 ENV TZ=Europe/Moscow
 
 COPY package.json package-lock.json ./
 COPY prisma ./prisma
+# npm ci ДО ENV NODE_ENV=production — иначе devDeps (включая tsx) не установятся
+# и CMD `npx tsx` будет тянуть пакет с npm при каждом старте контейнера.
 RUN npm ci && npx prisma generate
+
+ENV NODE_ENV=production
 
 COPY tsconfig.json ./
 COPY worker ./worker
