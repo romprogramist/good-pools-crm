@@ -185,6 +185,14 @@ export async function updateEquipmentAction(formData: FormData) {
     ? parseDate(parsed.data.lastReplacementDate)
     : null;
 
+  const warrantyChanged =
+    before.installDate.getTime() !== installDate.getTime() ||
+    before.warrantyMonths !== parsed.data.warrantyMonths;
+  const regulationChanged =
+    (before.lastReplacementDate?.getTime() ?? null) !==
+      (lastReplacementDate?.getTime() ?? null) ||
+    before.regulationPeriodDays !== parsed.data.regulationPeriodDays;
+
   await prisma.equipment.update({
     where: { id: equipmentId },
     data: {
@@ -194,6 +202,8 @@ export async function updateEquipmentAction(formData: FormData) {
       regulationPeriodDays: parsed.data.regulationPeriodDays,
       lastReplacementDate,
       notes: parsed.data.notes || null,
+      ...(warrantyChanged ? { warrantyNotifiedAt: null } : {}),
+      ...(regulationChanged ? { regulationNotifiedAt: null } : {}),
     },
   });
 
@@ -225,7 +235,7 @@ export async function markReplacedTodayAction(formData: FormData) {
   const now = new Date();
   await prisma.equipment.update({
     where: { id: equipmentId },
-    data: { lastReplacementDate: now },
+    data: { lastReplacementDate: now, regulationNotifiedAt: null },
   });
 
   await logActivity({

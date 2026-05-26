@@ -177,6 +177,8 @@ model Equipment {
   warrantyMonths       Int
   regulationPeriodDays Int
   lastReplacementDate  DateTime?
+  warrantyNotifiedAt   DateTime?
+  regulationNotifiedAt DateTime?
   notes                String?
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt
@@ -481,4 +483,15 @@ model PushSubscription {
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+}
+
+model CronRun {
+  id         String    @id @default(cuid())
+  name       String
+  startedAt  DateTime  @default(now())
+  finishedAt DateTime?
+  status     String    @default("running") // running | ok | error
+  info       Json?
+
+  @@index([name, startedAt])
 }

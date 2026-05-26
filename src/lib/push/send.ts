@@ -3,6 +3,8 @@ import webpush, { WebPushError } from "web-push";
 import { pushConfigured } from "./web-push";
 
 const PUSH_TTL_SECONDS = 60 * 60 * 24; // push services retain the notification up to 24h if device is offline
+const DEBUG_PUSH = process.env.DEBUG_PUSH === "1";
+const debug: typeof console.log = DEBUG_PUSH ? console.log.bind(console) : () => {};
 
 export type PushPayload = {
   title: string;
@@ -18,7 +20,7 @@ export async function sendPush(userId: string, payload: PushPayload): Promise<nu
   }
 
   const subs = await prisma.pushSubscription.findMany({ where: { userId } });
-  console.log("[push] sendPush start", { userId, subs: subs.length, kind: payload.tag ?? "?" });
+  debug("[push] sendPush start", { userId, subs: subs.length, kind: payload.tag ?? "?" });
   if (subs.length === 0) return 0;
 
   const json = JSON.stringify(payload);
@@ -35,7 +37,7 @@ export async function sendPush(userId: string, payload: PushPayload): Promise<nu
           json,
           { TTL: PUSH_TTL_SECONDS },
         );
-        console.log("[push] OK", { host, status: result.statusCode, ms: Date.now() - t0 });
+        debug("[push] OK", { host, status: result.statusCode, ms: Date.now() - t0 });
         delivered += 1;
         try {
           await prisma.pushSubscription.update({
@@ -47,7 +49,7 @@ export async function sendPush(userId: string, payload: PushPayload): Promise<nu
         }
       } catch (err: unknown) {
         if (err instanceof WebPushError && (err.statusCode === 404 || err.statusCode === 410)) {
-          console.log("[push] DEAD", { host, status: err.statusCode, ms: Date.now() - t0 });
+          debug("[push] DEAD", { host, status: err.statusCode, ms: Date.now() - t0 });
           deadEndpoints.push(s.endpoint);
         } else {
           const status = err instanceof WebPushError ? err.statusCode : undefined;
@@ -59,7 +61,7 @@ export async function sendPush(userId: string, payload: PushPayload): Promise<nu
 
   if (deadEndpoints.length > 0) {
     await prisma.pushSubscription.deleteMany({ where: { endpoint: { in: deadEndpoints } } });
-    console.log("[push] удалено мёртвых подписок:", deadEndpoints.length);
+    debug("[push] удалено мёртвых подписок:", deadEndpoints.length);
   }
 
   return delivered;

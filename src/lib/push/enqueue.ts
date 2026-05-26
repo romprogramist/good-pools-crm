@@ -120,6 +120,7 @@ export async function enqueuePush(
   });
 
   // 2. Fire-and-forget — реальная отправка. .catch чтобы unhandled rejection не валил Node.
+  // TODO(stage 16): заменить на PushOutbox + worker drain для надёжной доставки в проде.
   const browserPayload = buildPayload(kind, payload);
   for (const r of recipients) {
     void sendPush(r.userId, browserPayload).catch((err) => {
