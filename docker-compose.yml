@@ -3,6 +3,10 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        # NEXT_PUBLIC_* должны быть доступны при `next build` (впекаются в client-bundle).
+        # Читается из shell через `docker compose --env-file .env.production build`.
+        NEXT_PUBLIC_VAPID_PUBLIC_KEY: ${NEXT_PUBLIC_VAPID_PUBLIC_KEY}
     image: gpcrm-app:latest
     container_name: gpcrm-app
     restart: unless-stopped

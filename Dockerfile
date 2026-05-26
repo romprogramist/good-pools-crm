@@ -14,6 +14,12 @@ WORKDIR /app
 RUN apk add --no-cache libc6-compat openssl
 ENV NODE_OPTIONS="--max-old-space-size=1536"
 ENV NEXT_TELEMETRY_DISABLED=1
+
+# NEXT_PUBLIC_* впекаются в client-bundle на этапе `next build`, не читаются
+# в runtime. Передаём через build-arg из docker-compose.yml (см. args:).
+ARG NEXT_PUBLIC_VAPID_PUBLIC_KEY=""
+ENV NEXT_PUBLIC_VAPID_PUBLIC_KEY=$NEXT_PUBLIC_VAPID_PUBLIC_KEY
+
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN npx prisma generate
