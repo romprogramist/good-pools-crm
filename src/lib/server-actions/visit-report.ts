@@ -58,15 +58,30 @@ export async function startVisitAction(visitId: string): Promise<void> {
   if (visit.status !== "planned") {
     redirect(`/service/visits/${visitId}?error=${encodeURIComponent("Визит не в статусе planned")}`);
   }
+
+  // Снимаем индивидуальную цену сервиса бассейна на момент старта (как priceAtMoment у химии)
+  const pool = await prisma.pool.findUnique({
+    where: { id: visit.poolId },
+    select: { individualServicePrice: true },
+  });
+  const basePrice = pool?.individualServicePrice ? Number(pool.individualServicePrice) : 0;
+
   await prisma.visit.update({
     where: { id: visitId },
     data: { status: "in_progress", startedAt: new Date() },
   });
+
+  await prisma.visitExtraWork.create({
+    data: { visitId, name: "Сервис", price: basePrice, order: 0 },
+  });
+  await recomputeVisitTotal(visitId);
+
   await logActivity({
     actorId: actor.id,
     action: "visit.started",
     entityType: "Visit",
     entityId: visitId,
+    diff: { baseServicePrice: basePrice },
   });
   revalidatePath(`/service/visits/${visitId}`);
   redirect(`/service/visits/${visitId}?ok=${encodeURIComponent("Визит начат")}`);
