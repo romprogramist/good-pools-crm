@@ -2,7 +2,7 @@ import { auth } from "@/lib/auth";
 import { NextResponse } from "next/server";
 
 const PUBLIC_PATHS = ["/", "/login", "/setup", "/setup-password", "/icon-192.png", "/icon-512.png", "/icon-512-maskable.png", "/badge-72.png", "/offline.html", "/manifest.webmanifest"];
-const PUBLIC_PREFIXES = ["/api/auth", "/api/setup", "/_next", "/favicon", "/serwist/"];
+const PUBLIC_PREFIXES = ["/api/auth", "/api/setup", "/api/monitoring/webhook", "/_next", "/favicon", "/serwist/"];
 
 function isPublic(pathname: string) {
   if (PUBLIC_PATHS.includes(pathname)) return true;

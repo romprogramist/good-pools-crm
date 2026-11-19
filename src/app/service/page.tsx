@@ -42,6 +42,16 @@ const SECTIONS: { href: string; title: string; description: string; icon: React.
     ),
   },
   {
+    href: "/service/monitoring",
+    title: "Мониторинг",
+    description: "Показания приборов и аварии с объектов в реальном времени.",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+        <path d="M3 12h4l2.5-7 5 14 2.5-7h4" />
+      </svg>
+    ),
+  },
+  {
     href: "/service/support",
     title: "Поддержка",
     description: "Чат с клиентами — вопросы по обслуживанию.",
@@ -58,6 +68,9 @@ export default async function ServiceHome() {
   const pendingRequests = await prisma.onlineRequest.count({ where: { status: "pending" } });
   const unreadChat = await prisma.chatMessage.count({
     where: { readAt: null, sender: { role: "client" } },
+  });
+  const monitoringAlerts = await prisma.monitoringAlarm.count({
+    where: { clearedAt: null, controller: { active: true } },
   });
 
   return (
@@ -84,6 +97,11 @@ export default async function ServiceHome() {
                     {s.href === "/service/online-requests" && pendingRequests > 0 && (
                       <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">
                         {pendingRequests}
+                      </span>
+                    )}
+                    {s.href === "/service/monitoring" && monitoringAlerts > 0 && (
+                      <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">
+                        {monitoringAlerts}
                       </span>
                     )}
                     {s.href === "/service/support" && unreadChat > 0 && (

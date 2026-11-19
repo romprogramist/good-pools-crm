@@ -32,6 +32,16 @@ const SECTIONS = [
     ),
   },
   {
+    href: "/service/monitoring",
+    title: "Мониторинг",
+    description: "Показания приборов и аварии с объектов. Подключение контроллеров.",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+        <path d="M3 12h4l2.5-7 5 14 2.5-7h4" />
+      </svg>
+    ),
+  },
+  {
     href: "/admin/equipment-templates",
     title: "Шаблоны оборудования",
     description: "Типовое оборудование с гарантией и регламентом замены.",
@@ -108,6 +118,9 @@ export default async function AdminHome() {
   const unreadChat = await prisma.chatMessage.count({
     where: { readAt: null, sender: { role: "client" } },
   });
+  const monitoringAlerts = await prisma.monitoringAlarm.count({
+    where: { clearedAt: null, controller: { active: true } },
+  });
 
   return (
     <>
@@ -132,6 +145,11 @@ export default async function AdminHome() {
                     <div className="text-base font-semibold text-zinc-900">
                       {s.title}
                     </div>
+                    {s.href === "/service/monitoring" && monitoringAlerts > 0 && (
+                      <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">
+                        {monitoringAlerts}
+                      </span>
+                    )}
                     {s.href === "/admin/support" && unreadChat > 0 && (
                       <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">
                         {unreadChat}

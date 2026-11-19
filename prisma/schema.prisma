@@ -99,6 +99,7 @@ model Customer {
 
   onlineRequests OnlineRequest[]
   chatThread     ChatThread?
+  monitoringControllers MonitoringController[]
 }
 
 model Pool {
@@ -494,4 +495,82 @@ model CronRun {
   info       Json?
 
   @@index([name, startedAt])
+}
+
+// ─── Мониторинг приборов (вебхук от контроллера на объекте) ───────────────
+
+model MonitoringController {
+  id                String    @id @default(cuid())
+  externalId        String    @unique // controller_id в сообщениях, напр. "WB-7K2M9QX4"
+  name              String
+  customerId        String?
+  tokenHash         String    @unique // sha256 от Bearer-токена
+  tokenHint         String // последние 4 символа токена — чтобы опознать в админке
+  active            Boolean   @default(true)
+  notes             String?
+  lastSeenAt        DateTime? // любое принятое сообщение
+  lastSummaryAt     DateTime?
+  lastSummary       Json? // последняя сводка целиком
+  offlineNotifiedAt DateTime? // когда отправили пуш «нет связи»
+  expectHeartbeat   Boolean   @default(false) // true после первой сводки/пинга: с этого момента тишина = «нет связи»
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  customer Customer?           @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  alarms   MonitoringAlarm[]
+  readings MonitoringReading[]
+  messages MonitoringMessage[]
+
+  @@index([customerId])
+}
+
+model MonitoringAlarm {
+  id           String    @id @default(cuid())
+  controllerId String
+  eventId      String // event_id: одинаков у raised и cleared
+  code         String
+  title        String
+  severity     String    @default("warning") // warning | critical
+  zone         String?
+  zoneTitle    String?
+  stationModel String?
+  stationId    String?
+  reason       String?
+  raisedAt     DateTime
+  clearedAt    DateTime?
+  durationS    Int?
+  clearedBy    String? // event | summary
+  createdAt    DateTime  @default(now())
+
+  controller MonitoringController @relation(fields: [controllerId], references: [id], onDelete: Cascade)
+
+  @@unique([controllerId, eventId])
+  @@index([controllerId, clearedAt])
+  @@index([controllerId, raisedAt])
+}
+
+model MonitoringReading {
+  id           String   @id @default(cuid())
+  controllerId String
+  at           DateTime // время замера по контроллеру
+  payload      Json
+  createdAt    DateTime @default(now())
+
+  controller MonitoringController @relation(fields: [controllerId], references: [id], onDelete: Cascade)
+
+  @@index([controllerId, at])
+}
+
+model MonitoringMessage {
+  id           String   @id @default(cuid())
+  controllerId String
+  messageId    String // message_id: защита от дублей при повторах
+  type         String
+  payload      Json
+  receivedAt   DateTime @default(now())
+
+  controller MonitoringController @relation(fields: [controllerId], references: [id], onDelete: Cascade)
+
+  @@unique([controllerId, messageId])
+  @@index([controllerId, receivedAt])
 }

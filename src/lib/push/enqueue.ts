@@ -16,7 +16,11 @@ export type PushKind =
   | "visit_payment_marked"
   | "new_chat_message"
   | "equipment_warranty_expiring"
-  | "equipment_regulation_due";
+  | "equipment_regulation_due"
+  | "monitoring_alarm_raised"
+  | "monitoring_alarm_cleared"
+  | "monitoring_offline"
+  | "monitoring_online";
 
 function str(v: unknown, fallback = ""): string {
   if (typeof v === "string") return v;
@@ -97,6 +101,40 @@ function buildPayload(kind: PushKind, raw: Record<string, unknown>): PushPayload
         body: `${str(raw.title, "Оборудование")} — через ${str(raw.daysLeft, "7")} дн.`,
         url: str(raw.url, "/"),
         tag: `regulation-${str(raw.equipmentId)}`,
+      };
+    case "monitoring_alarm_raised": {
+      const critical = str(raw.severity) === "critical";
+      const zone = str(raw.zoneTitle);
+      const reason = str(raw.reason);
+      return {
+        title: `${critical ? "🔴 Авария" : "🟡 Внимание"}: ${str(raw.controllerName, "объект")}`,
+        body: [str(raw.title, "Сработала авария"), zone, reason].filter(Boolean).join(" · "),
+        url: `/service/monitoring/${str(raw.controllerId)}`,
+        tag: `mon-alarm-${str(raw.alarmId)}`,
+      };
+    }
+    case "monitoring_alarm_cleared": {
+      const zone = str(raw.zoneTitle);
+      return {
+        title: `✅ Авария снята: ${str(raw.controllerName, "объект")}`,
+        body: [str(raw.title), zone, `длилась ${str(raw.duration, "—")}`].filter(Boolean).join(" · "),
+        url: `/service/monitoring/${str(raw.controllerId)}`,
+        tag: `mon-alarm-${str(raw.alarmId)}`,
+      };
+    }
+    case "monitoring_offline":
+      return {
+        title: `⚫ Нет связи: ${str(raw.controllerName, "объект")}`,
+        body: `Контроллер молчит. Последний раз выходил на связь ${str(raw.since, "давно")}. Возможно, нет света или интернета.`,
+        url: `/service/monitoring/${str(raw.controllerId)}`,
+        tag: `mon-link-${str(raw.controllerId)}`,
+      };
+    case "monitoring_online":
+      return {
+        title: `🟢 Связь восстановлена: ${str(raw.controllerName, "объект")}`,
+        body: `Контроллер снова на связи с ${str(raw.time, "")}.`,
+        url: `/service/monitoring/${str(raw.controllerId)}`,
+        tag: `mon-link-${str(raw.controllerId)}`,
       };
   }
 }
